@@ -1,5 +1,6 @@
 import { Command } from '@sapphire/framework'
 import { type ChatInputCommandInteraction, PermissionFlagsBits, type InteractionResponse } from 'discord.js'
+import userHandler from '../lib/database/userHandler'
 
 export class BlocklistCommand extends Command {
   public constructor (context: Command.LoaderContext, options: Command.Options) {
@@ -45,24 +46,46 @@ export class BlocklistCommand extends Command {
       // Display blocklist (paginate it)
     }
 
+    const user = interaction.options.getUser('user', true)
+    const userId = user.id
+    const displayName = user.displayName
+
     if (subcommand === 'add') {
-      const userId = interaction.options.getUser('user', true).id
-      return await this.addUserToBlocklist(interaction, userId)
+      return await this.addUserToBlocklist(interaction, userId, displayName)
     }
 
     if (subcommand === 'remove') {
-      const userId = interaction.options.getUser('user', true).id
-      return await this.removeUserFromBlocklist(interaction, userId)
+      return await this.removeUserFromBlocklist(interaction, userId, displayName)
     }
 
     return await interaction.reply({ content: 'Invalid subcommand.', ephemeral: true })
   }
 
-  public async addUserToBlocklist (interaction: ChatInputCommandInteraction, userId: string): Promise<InteractionResponse<boolean>> {
+  public async addUserToBlocklist (interaction: ChatInputCommandInteraction, userId: string, displayName: string): Promise<InteractionResponse<boolean>> {
+    if (interaction.guild == null) {
+      return await interaction.reply({ content: 'Error fetching details from the server.', ephemeral: true })
+    }
 
+    const toggled = await userHandler.toggleBlocklistStatus(userId, interaction.guild.id, true)
+
+    if (!toggled) {
+      return await interaction.reply({ content: `Error adding user **${displayName}** to blocklist.`, ephemeral: true })
+    }
+
+    return await interaction.reply({ content: `User **${displayName}** added to blocklist.`, ephemeral: true })
   }
 
-  public async removeUserFromBlocklist (interaction: ChatInputCommandInteraction, userId: string): Promise<InteractionResponse<boolean>> {
+  public async removeUserFromBlocklist (interaction: ChatInputCommandInteraction, userId: string, displayName: string): Promise<InteractionResponse<boolean>> {
+    if (interaction.guild == null) {
+      return await interaction.reply({ content: 'Error fetching details from the server.', ephemeral: true })
+    }
 
+    const toggled = await userHandler.toggleBlocklistStatus(userId, interaction.guild.id, false)
+
+    if (!toggled) {
+      return await interaction.reply({ content: `Error removing user **${displayName}** from blocklist.`, ephemeral: true })
+    }
+
+    return await interaction.reply({ content: `User **${displayName}** removed from blocklist.`, ephemeral: true })
   }
 }
