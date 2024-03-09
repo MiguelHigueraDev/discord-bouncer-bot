@@ -49,7 +49,7 @@ export class BouncerSetup extends Command {
                 .addChannelTypes(ChannelType.GuildText)
             )
         ), {
-      idHints: ['1215894964060422206']
+      idHints: ['1216082943433506887']
     })
   }
 
@@ -69,7 +69,7 @@ export class BouncerSetup extends Command {
       const channel = interaction.options.getChannel('voice-channel', true)
 
       // First check if bot has permissions to connect to the channel and talk
-      const hasPermissions = await checkChannelPermissions(interaction.guild.id, interaction.user.id, channel.id, ['Connect', 'Speak'])
+      const hasPermissions = await checkChannelPermissions(interaction.guild.id, channel.id, ['Connect', 'Speak'])
       // Error checking permissions
       if (hasPermissions === false) {
         return await interaction.reply({ content: 'Error checking channel permissions.', ephemeral: true })
@@ -103,7 +103,7 @@ export class BouncerSetup extends Command {
       const channel = interaction.options.getChannel('text-channel', true)
 
       // First check if bot has permissions to read and send messages to the channel
-      const hasPermissions = await checkChannelPermissions(interaction.guild.id, interaction.user.id, channel.id, ['ViewChannel', 'SendMessages'])
+      const hasPermissions = await checkChannelPermissions(interaction.guild.id, channel.id, ['ViewChannel', 'SendMessages'])
       // Error checking permissions
       if (hasPermissions === false) {
         return await interaction.reply({ content: 'Error checking channel permissions.', ephemeral: true })

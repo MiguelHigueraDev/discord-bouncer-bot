@@ -2,24 +2,22 @@ import { container } from '@sapphire/framework'
 import { type PermissionResolvable } from 'discord.js'
 
 /**
- * Check channel permissions for a user in a guild.
+ * Check channel permissions for the bot in a guild.
  *
  * @param {string} guildId - The ID of the guild
- * @param {string} userId - The ID of the user
  * @param {string} channelId - The ID of the channel
  * @param {string[]} permissions - The permissions to check
  * @return {Promise<string[] | boolean>} The missing permissions or a boolean indicating if all permissions are present
  */
-export const checkChannelPermissions = async (guildId: string, userId: string, channelId: string, permissions: string[]): Promise<string[] | boolean> => {
+export const checkChannelPermissions = async (guildId: string, channelId: string, permissions: string[]): Promise<string[] | boolean> => {
   try {
-    // Fetch guild, guild member, and channel
     const guild = await container.client.guilds.fetch(guildId)
-    const guildMember = await guild.members.fetch(userId)
     const channel = await guild.channels.fetch(channelId)
-
-    if (channel == null) {
+    if (container.client.user == null || channel == null) {
       return false
     }
+
+    const guildMember = await guild.members.fetch(container.client.user.id)
 
     // Store all missing permissions to display them to the user in case they are missing one of them
     const missingPermissions: string[] = []
