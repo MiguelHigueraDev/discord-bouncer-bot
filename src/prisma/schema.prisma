@@ -14,27 +14,26 @@ datasource db {
 }
 
 model Guild {
-  id String @id
-  name String? @db.VarChar(255)
-  privateVcId String? @db.VarChar(255)
-  waitingVcId String? @db.VarChar(255)
-  textChannelId String? @db.VarChar(255)
-  users GuildUser[]
+  id            String      @id
+  name          String?     @db.VarChar(255)
+  privateVcId   String?     @db.VarChar(255)
+  waitingVcId   String?     @db.VarChar(255)
+  textChannelId String?     @db.VarChar(255)
+  users         GuildUser[]
 }
 
 model User {
-  id String @id
-  username String? @db.VarChar(255)
-  allowlisted Boolean
-  blocklisted Boolean
-  guilds GuildUser[]
+  id          String      @id
+  username    String?     @db.VarChar(255)
+  guilds      GuildUser[]
 }
 
 model GuildUser {
-  guild Guild @relation(fields: [guildId], references: [id])
+  guild   Guild  @relation(fields: [guildId], references: [id])
   guildId String
-  user User @relation(fields: [userId], references: [id])
-  userId String
-
+  user    User   @relation(fields: [userId], references: [id])
+  userId  String
+  allowlisted Boolean
+  blocklisted Boolean
   @@id([userId, guildId])
 }

@@ -54,7 +54,9 @@ const updateGuildUserStatus = async (userId: string, guildId: string): Promise<b
       await container.db.guildUser.create({
         data: {
           userId,
-          guildId
+          guildId,
+          allowlisted: false,
+          blocklisted: false
         }
       })
     }
@@ -78,7 +80,7 @@ const updateGuildUserStatus = async (userId: string, guildId: string): Promise<b
  */
 const toggleBlocklistStatus = async (userId: string, guildId: string, blocklisted: boolean = true): Promise<boolean> => {
   try {
-    const foundGuildUser = await container.db.guildUser.findFirst({ where: { userId, guildId } })
+    const foundGuildUser = await container.db.guildUser.findUnique({ where: { userId_guildId: { userId, guildId } } })
     if (foundGuildUser == null) {
       // GuildUser doesn't exist, create it.
       const created = await updateGuildUserStatus(userId, guildId)
@@ -87,8 +89,10 @@ const toggleBlocklistStatus = async (userId: string, guildId: string, blockliste
 
     await container.db.guildUser.update({
       where: {
-        userId,
-        guildId
+        userId_guildId: {
+          userId,
+          guildId
+        }
       },
       data: {
         blocklisted
@@ -123,8 +127,10 @@ const toggleAllowlistStatus = async (userId: string, guildId: string, allowliste
 
     await container.db.guildUser.update({
       where: {
-        userId,
-        guildId
+        userId_guildId: {
+          userId,
+          guildId
+        }
       },
       data: {
         allowlisted
