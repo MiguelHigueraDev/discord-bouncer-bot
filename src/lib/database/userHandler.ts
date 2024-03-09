@@ -1,5 +1,14 @@
 import { container } from '@sapphire/framework'
 
+/**
+ * Updates the status of a user.
+ * If the user doesn't exist, creates a new record for the user.
+ * If the user exists, updates the username.
+ *
+ * @param {string} userId - The unique identifier of the user.
+ * @returns {Promise<boolean>} A promise that resolves to true if the operation was successful, false otherwise.
+ * @throws {Error} Throws an error if an error occurs during the operation.
+ */
 const updateUserStatus = async (userId: string): Promise<boolean> => {
   try {
     const foundUser = await container.db.user.findFirst({ where: { id: userId } })
@@ -29,6 +38,15 @@ const updateUserStatus = async (userId: string): Promise<boolean> => {
   }
 }
 
+/**
+ * Updates the status of a guild user.
+ * If the user doesn't exist, creates a new record for the user in the guild.
+ *
+ * @param {string} userId - The unique identifier of the user.
+ * @param {string} guildId - The unique identifier of the guild.
+ * @returns {Promise<boolean>} A promise that resolves to true if the operation was successful, false otherwise.
+ * @throws {Error} Throws an error if an error occurs during the operation.
+ */
 const updateGuildUserStatus = async (userId: string, guildId: string): Promise<boolean> => {
   try {
     const foundGuildUser = await container.db.guildUser.findFirst({ where: { userId, guildId } })
@@ -83,6 +101,17 @@ const toggleBlocklistStatus = async (userId: string, guildId: string, blockliste
   }
 }
 
+/**
+ * Toggles the allowlist status of a user within a specific guild.
+ * If the user exists, updates the allowlist status. If not, creates a new record.
+ *
+ * @param {string} userId - The unique identifier of the user.
+ * @param {string} guildId - The unique identifier of the guild.
+ * @param {boolean} [allowlisted=true] - The desired allowlist status of the user. Default is true.
+ * @returns {Promise<boolean>} A promise that resolves to true if the operation was successful, false otherwise.
+ * @throws {Error} Throws an error if an error occurs during the operation.
+ *
+ */
 const toggleAllowlistStatus = async (userId: string, guildId: string, allowlisted: boolean = true): Promise<boolean> => {
   try {
     const foundGuildUser = await container.db.guildUser.findFirst({ where: { userId, guildId } })
