@@ -3,6 +3,11 @@ import * as fs from 'fs'
 
 const FILE_PATH = './config.json'
 
+/**
+ * privateVcId: The ID of the private voice channel that the bot will manage.
+ * waitingVcId: The ID of the voice channel that the bot will scan for users.
+ * textChannelId: The ID of the text channel that the bot will send messages to.
+ */
 interface AppConfig {
   privateVcId: Snowflake
   waitingVcId: Snowflake
