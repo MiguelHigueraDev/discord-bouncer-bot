@@ -1,0 +1,40 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Guild {
+  id String @id
+  name String? @db.VarChar(255)
+  privateVcId String? @db.VarChar(255)
+  waitingVcId String? @db.VarChar(255)
+  textChannelId String? @db.VarChar(255)
+  users GuildUser[]
+}
+
+model User {
+  id String @id
+  username String? @db.VarChar(255)
+  allowlisted Boolean
+  blocklisted Boolean
+  guilds GuildUser[]
+}
+
+model GuildUser {
+  guild Guild @relation(fields: [guildId], references: [id])
+  guildId String
+  user User @relation(fields: [userId], references: [id])
+  userId String
+
+  @@id([userId, guildId])
+}
