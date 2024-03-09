@@ -1,4 +1,5 @@
 import { container } from '@sapphire/framework'
+import guildHandler from './guildHandler'
 
 /**
  * Updates the status of a user.
@@ -49,6 +50,18 @@ const updateUserStatus = async (userId: string): Promise<boolean> => {
  */
 const updateGuildUserStatus = async (userId: string, guildId: string): Promise<boolean> => {
   try {
+    // First update user status
+    const updatedUser = await updateUserStatus(userId)
+    if (!updatedUser) {
+      return false
+    }
+
+    // Update guild status as well
+    const updatedGuild = await guildHandler.updateGuildStatus(guildId)
+    if (!updatedGuild) {
+      return false
+    }
+
     const foundGuildUser = await container.db.guildUser.findFirst({ where: { userId, guildId } })
     if (foundGuildUser == null) {
       await container.db.guildUser.create({
