@@ -34,6 +34,7 @@ model GuildUser {
   guildId     String
   user        User    @relation(fields: [userId], references: [id])
   userId      String
+  lastRequest DateTime?
   allowlisted Boolean
   blocklisted Boolean
 
