@@ -1,5 +1,5 @@
 import { Command } from '@sapphire/framework'
-import { type ChatInputCommandInteraction, PermissionFlagsBits, type InteractionResponse, ChannelType } from 'discord.js'
+import { type ChatInputCommandInteraction, PermissionFlagsBits, type InteractionResponse, ChannelType, EmbedBuilder } from 'discord.js'
 import guildHandler from '../lib/database/guildHandler'
 import { checkChannelPermissions } from '../lib/permissions/checkPermissions'
 
@@ -19,6 +19,9 @@ export class BouncerSetup extends Command {
         .setDescription(this.description)
         .setDMPermission(false)
         .setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers)
+        .addSubcommand((command) =>
+          command.setName('show-channels').setDescription('Show the current channels.')
+        )
         .addSubcommand((command) =>
           command.setName('set-private-vc').setDescription('Set the voice channel that will be private.')
             .addChannelOption((option) =>
@@ -55,13 +58,14 @@ export class BouncerSetup extends Command {
 
   public async chatInputRun (interaction: ChatInputCommandInteraction): Promise<InteractionResponse<boolean>> {
     const subcommand = interaction.options.getSubcommand()
-    if (subcommand == null) {
-      // Show help
-    }
-
     // Check this so typescript doesn't complain about the guild being possibly null
     if (interaction.guild == null) {
       return await interaction.reply({ content: 'Error fetching details from the server.', ephemeral: true })
+    }
+
+    if (subcommand === 'show-channels') {
+      const embed = await this.makeChannelsEmbed(interaction.guild.id)
+      return await interaction.reply({ embeds: [embed], ephemeral: true })
     }
 
     // Voice channels
@@ -79,6 +83,7 @@ export class BouncerSetup extends Command {
         return await interaction.reply({ content: 'I do not have permissions to connect to this channel.\nMissing permissions: `' + hasPermissions.join(', ') + '`', ephemeral: true })
       }
 
+      // Voice channels
       if (subcommand === 'set-private-vc') {
         const updated = await guildHandler.updateGuildPrivateVc(interaction.guild.id, channel.id)
 
@@ -122,5 +127,23 @@ export class BouncerSetup extends Command {
     }
 
     return await interaction.reply({ content: 'Invalid subcommand.', ephemeral: true })
+  }
+
+  private readonly makeChannelsEmbed = async (guildId: string): Promise<EmbedBuilder> => {
+    const privateVcId = await guildHandler.getGuildPrivateVc(guildId)
+    const waitingVcId = await guildHandler.getGuildWaitingVc(guildId)
+    const textChannelId = await guildHandler.getGuildTextChannel(guildId)
+
+    const embed = new EmbedBuilder()
+      .setTitle('Channels')
+      .setColor('Blurple')
+      .setDescription('Set each channel using this command\'s subcommands.')
+      .addFields(
+        { name: 'Private voice channel', value: `${privateVcId != null ? `<#${privateVcId}>` : 'Not set.'}` },
+        { name: 'Waiting room voice channel', value: `${waitingVcId != null ? `<#${waitingVcId}>` : 'Not set.'}` },
+        { name: 'Text channel', value: `${textChannelId != null ? `<#${textChannelId}>` : 'Not set.'}` }
+      )
+
+    return embed
   }
 }

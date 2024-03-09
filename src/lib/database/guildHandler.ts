@@ -127,8 +127,41 @@ const updateGuildTextChannel = async (guildId: string, textChannelId: string): P
   }
 }
 
+/**
+ * Returns the private voice channel for a guild.
+ *
+ * @param {string} guildId - The ID of the guild
+ * @return {Promise<string | null>} The ID of the private voice channel or null if not found
+ */
+const getGuildPrivateVc = async (guildId: string): Promise<string | null> => {
+  const guild = await container.db.guild.findUnique({ where: { id: guildId } })
+  return guild?.privateVcId ?? null
+}
+
+/**
+ * Returns the waiting room voice channel for a guild.
+ *
+ * @param {string} guildId - The ID of the guild
+ * @return {Promise<string | null>} The ID of the waiting room voice channel or null if not found
+ */
+const getGuildWaitingVc = async (guildId: string): Promise<string | null> => {
+  const guild = await container.db.guild.findUnique({ where: { id: guildId } })
+  return guild?.waitingVcId ?? null
+}
+
+/**
+ * Returns the text channel for a guild.
+ *
+ * @param {string} guildId - The ID of the guild
+ * @return {Promise<string | null>} The ID of the text channel or null if not found
+ */
+const getGuildTextChannel = async (guildId: string): Promise<string | null> => {
+  const guild = await container.db.guild.findUnique({ where: { id: guildId } })
+  return guild?.textChannelId ?? null
+}
+
 const guildHandler = {
-  updateGuildStatus, updateGuildPrivateVc, updateGuildWaitingVc, updateGuildTextChannel
+  updateGuildStatus, updateGuildPrivateVc, updateGuildWaitingVc, updateGuildTextChannel, getGuildPrivateVc, getGuildWaitingVc, getGuildTextChannel
 }
 
 export default guildHandler
