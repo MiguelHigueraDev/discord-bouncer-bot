@@ -1,3 +1,4 @@
+/*
 import { Command } from '@sapphire/framework'
 import { type ChatInputCommandInteraction, type InteractionResponse, PermissionFlagsBits } from 'discord.js'
 import userHandler from '../lib/database/userHandler'
@@ -6,7 +7,7 @@ export class AllowlistCommand extends Command {
   public constructor (context: Command.LoaderContext, options: Command.Options) {
     super(context, {
       ...options,
-      name: 'blocklist',
+      name: 'allowlist',
       description: 'See allowlisted users in the server, or add/remove them from it.'
     })
   }
@@ -36,7 +37,7 @@ export class AllowlistCommand extends Command {
                 .setRequired(true)
             )
         ), {
-      idHints: []
+      idHints: ['1215894967042441216']
     })
   }
 
@@ -89,3 +90,5 @@ export class AllowlistCommand extends Command {
     return await interaction.reply({ content: `User **${displayName}** removed from allowlist.`, ephemeral: true })
   }
 }
+
+*/
