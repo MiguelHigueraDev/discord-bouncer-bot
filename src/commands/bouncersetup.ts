@@ -58,13 +58,9 @@ export class BouncerSetup extends Command {
 
   public async chatInputRun (interaction: ChatInputCommandInteraction): Promise<InteractionResponse<boolean>> {
     const subcommand = interaction.options.getSubcommand()
-    // Check this so typescript doesn't complain about the guild being possibly null
-    if (interaction.guild == null) {
-      return await interaction.reply({ content: 'Error fetching details from the server.', ephemeral: true })
-    }
 
     if (subcommand === 'show-channels') {
-      const embed = await this.makeChannelsEmbed(interaction.guild.id)
+      const embed = await this.makeChannelsEmbed(interaction.guild!.id)
       return await interaction.reply({ embeds: [embed], ephemeral: true })
     }
 
@@ -73,7 +69,7 @@ export class BouncerSetup extends Command {
       const channel = interaction.options.getChannel('voice-channel', true)
 
       // First check if bot has permissions to connect to the channel and talk
-      const hasPermissions = await checkChannelPermissions(interaction.guild.id, channel.id, ['Connect', 'Speak'])
+      const hasPermissions = await checkChannelPermissions(interaction.guild!.id, channel.id, ['Connect', 'Speak'])
       // Error checking permissions
       if (hasPermissions === false) {
         return await interaction.reply({ content: 'Error checking channel permissions.', ephemeral: true })
@@ -85,7 +81,7 @@ export class BouncerSetup extends Command {
 
       // Voice channels
       if (subcommand === 'set-private-vc') {
-        const updated = await guildHandler.updateGuildPrivateVc(interaction.guild.id, channel.id)
+        const updated = await guildHandler.updateGuildPrivateVc(interaction.guild!.id, channel.id)
 
         if (!updated) {
           return await interaction.reply({ content: 'Error updating the private voice channel.', ephemeral: true })
@@ -93,7 +89,7 @@ export class BouncerSetup extends Command {
           return await interaction.reply({ content: `The private channel has been updated to <#${channel.id}>.`, ephemeral: true })
         }
       } else {
-        const updated = await guildHandler.updateGuildWaitingVc(interaction.guild.id, channel.id)
+        const updated = await guildHandler.updateGuildWaitingVc(interaction.guild!.id, channel.id)
 
         if (!updated) {
           return await interaction.reply({ content: 'Error updating the waiting room voice channel.', ephemeral: true })
@@ -108,7 +104,7 @@ export class BouncerSetup extends Command {
       const channel = interaction.options.getChannel('text-channel', true)
 
       // First check if bot has permissions to read and send messages to the channel
-      const hasPermissions = await checkChannelPermissions(interaction.guild.id, channel.id, ['ViewChannel', 'SendMessages'])
+      const hasPermissions = await checkChannelPermissions(interaction.guild!.id, channel.id, ['ViewChannel', 'SendMessages'])
       // Error checking permissions
       if (hasPermissions === false) {
         return await interaction.reply({ content: 'Error checking channel permissions.', ephemeral: true })
@@ -118,7 +114,7 @@ export class BouncerSetup extends Command {
         return await interaction.reply({ content: 'I do not have permissions to read and send messages to this channel.\nMissing permissions: `' + hasPermissions.join(', ') + '`', ephemeral: true })
       }
 
-      const updated = await guildHandler.updateGuildTextChannel(interaction.guild.id, channel.id)
+      const updated = await guildHandler.updateGuildTextChannel(interaction.guild!.id, channel.id)
       if (!updated) {
         return await interaction.reply({ content: 'Error updating the text channel.', ephemeral: true })
       } else {
