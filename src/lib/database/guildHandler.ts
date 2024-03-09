@@ -18,7 +18,8 @@ const updateGuildStatus = async (guildId: string): Promise<boolean> => {
       await container.db.guild.create({
         data: {
           id: guildId,
-          name: guildName
+          name: guildName,
+          enabled: false
         }
       })
     } else {
@@ -38,6 +39,46 @@ const updateGuildStatus = async (guildId: string): Promise<boolean> => {
     console.error('An error has ocurred while running guildHandler:updateGuildStatus', error)
     return false
   }
+}
+
+/**
+ * Toggles the bouncer for a specific guild.
+ *
+ * @param {string} guildId - The ID of the guild to toggle the bouncer for
+ * @param {boolean} enabled - The new status of the bouncer (true for enabled, false for disabled)
+ * @return {Promise<boolean>} Whether the bouncer was successfully toggled
+ */
+const toggleGuildBouncer = async (guildId: string, enabled: boolean): Promise<boolean> => {
+  try {
+    const updatedGuild = await updateGuildStatus(guildId)
+    if (!updatedGuild) {
+      return false
+    }
+
+    await container.db.guild.update({
+      where: {
+        id: guildId
+      },
+      data: {
+        enabled
+      }
+    })
+    return true
+  } catch (error) {
+    console.error('An error has ocurred while running guildHandler:toggleGuildBouncer', error)
+    return false
+  }
+}
+
+/**
+ * Retrieves the bouncer status of the specified guild.
+ *
+ * @param {string} guildId - The ID of the guild
+ * @return {Promise<boolean>} A boolean representing the bouncer status of the guild
+ */
+const getGuildBouncerStatus = async (guildId: string): Promise<boolean> => {
+  const guild = await container.db.guild.findUnique({ where: { id: guildId } })
+  return guild?.enabled ?? false
 }
 
 /**
@@ -161,7 +202,15 @@ const getGuildTextChannel = async (guildId: string): Promise<string | null> => {
 }
 
 const guildHandler = {
-  updateGuildStatus, updateGuildPrivateVc, updateGuildWaitingVc, updateGuildTextChannel, getGuildPrivateVc, getGuildWaitingVc, getGuildTextChannel
+  updateGuildStatus,
+  toggleGuildBouncer,
+  getGuildBouncerStatus,
+  updateGuildPrivateVc,
+  updateGuildWaitingVc,
+  updateGuildTextChannel,
+  getGuildPrivateVc,
+  getGuildWaitingVc,
+  getGuildTextChannel
 }
 
 export default guildHandler
