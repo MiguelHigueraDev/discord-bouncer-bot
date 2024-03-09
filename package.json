@@ -17,6 +17,7 @@
   "dependencies": {
     "@discordjs/opus": "^0.9.0",
     "@discordjs/voice": "^0.16.1",
+    "@prisma/client": "5.10.2",
     "@sapphire/framework": "^5.0.7",
     "discord.js": "14.x",
     "dotenv": "^16.4.5"
