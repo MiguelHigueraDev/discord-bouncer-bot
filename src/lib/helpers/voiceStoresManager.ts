@@ -7,6 +7,12 @@
  */
 import { container } from '@sapphire/framework'
 
+/**
+ * Set the cooldown for a user in a specific guild's session.
+ *
+ * @param {string} userId - The ID of the user
+ * @param {string} guildId - The ID of the guild
+ */
 const setCooldown = (userId: string, guildId: string) => {
   // Check if session is already stored
   const session = container.sessions.find((s) => s.guildId === guildId)
@@ -20,6 +26,12 @@ const setCooldown = (userId: string, guildId: string) => {
   }
 }
 
+/**
+ * Clears the cooldown for a specific user in a guild session.
+ *
+ * @param {string} userId - The ID of the user whose cooldown is being cleared
+ * @param {string} guildId - The ID of the guild session
+ */
 const clearCooldown = (userId: string, guildId: string) => {
   // Check if session is already stored
   const session = container.sessions.find((s) => s.guildId === guildId)
@@ -30,6 +42,13 @@ const clearCooldown = (userId: string, guildId: string) => {
   session.usersInCooldown = session.usersInCooldown.filter((u) => u.id !== userId)
 }
 
+/**
+ * Check if the user is in cooldown for the specified guild.
+ *
+ * @param {string} userId - The ID of the user to check.
+ * @param {string} guildId - The ID of the guild to check.
+ * @return {boolean} Returns true if the user is in cooldown, otherwise false.
+ */
 const checkIfUserIsInCooldown = (userId: string, guildId: string): boolean => {
   const session = container.sessions.find((s) => s.guildId === guildId)
   if (session == null) return false
@@ -45,6 +64,12 @@ const checkIfUserIsInCooldown = (userId: string, guildId: string): boolean => {
   return true
 }
 
+/**
+ * Sets the remembered user for a specific guild, if not already stored in the session.
+ *
+ * @param {string} userId - The ID of the user to be remembered.
+ * @param {string} guildId - The ID of the guild for which the user is to be remembered.
+ */
 const setRememberedUser = (userId: string, guildId: string) => {
   // Check if session is already stored
   const session = container.sessions.find((s) => s.guildId === guildId)
@@ -56,6 +81,13 @@ const setRememberedUser = (userId: string, guildId: string) => {
   }
 }
 
+/**
+ * Check if the user is remembered in the session for the given guild.
+ *
+ * @param {string} userId - The ID of the user to check.
+ * @param {string} guildId - The ID of the guild to check.
+ * @return {boolean} Whether the user is remembered in the session for the given guild.
+ */
 const checkIfUserIsRemembered = (userId: string, guildId: string): boolean => {
   const session = container.sessions.find((s) => s.guildId === guildId)
   if (session == null) return false
@@ -68,6 +100,12 @@ const checkIfUserIsRemembered = (userId: string, guildId: string): boolean => {
   return true
 }
 
+/**
+ * Sets the provided user as an ignored user for the specified guild if not already ignored.
+ *
+ * @param {string} userId - The ID of the user to be ignored
+ * @param {string} guildId - The ID of the guild where the user is to be ignored
+ */
 const setIgnoredUser = (userId: string, guildId: string) => {
   // Check if session is already stored
   const session = container.sessions.find((s) => s.guildId === guildId)
@@ -79,6 +117,13 @@ const setIgnoredUser = (userId: string, guildId: string) => {
   }
 }
 
+/**
+ * Checks if the user is ignored in the specified guild.
+ *
+ * @param {string} userId - The ID of the user to check.
+ * @param {string} guildId - The ID of the guild to check in.
+ * @return {boolean} Whether the user is ignored in the guild.
+ */
 const checkIfUserIsIgnored = (userId: string, guildId: string): boolean => {
   const session = container.sessions.find((s) => s.guildId === guildId)
   if (session == null) return false
