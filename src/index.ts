@@ -3,7 +3,25 @@ import { SapphireClient, container } from '@sapphire/framework'
 import { ActivityType, GatewayIntentBits } from 'discord.js'
 import { config } from 'dotenv'
 import { type Guild } from './lib/interfaces/Guild'
+import { type CooldownGuild } from './lib/interfaces/CooldownGuild'
 config()
+
+// Database init
+const prisma = new PrismaClient()
+
+declare module '@sapphire/pieces' {
+  interface Container {
+    db: PrismaClient
+    rememberedUsers: Guild[]
+    ignoredUsers: Guild[]
+    usersInCooldown: CooldownGuild[]
+  }
+}
+
+container.db = prisma
+container.rememberedUsers = []
+container.ignoredUsers = []
+container.usersInCooldown = []
 
 const token = process.env.BOT_TOKEN
 
@@ -18,20 +36,5 @@ const client = new SapphireClient({
     }]
   }
 })
-
-// Database init
-const prisma = new PrismaClient()
-
-declare module '@sapphire/pieces' {
-  interface Container {
-    db: PrismaClient
-    rememberedUsers: Guild[]
-    ignoredUsers: Guild[]
-  }
-}
-
-container.db = prisma
-container.rememberedUsers = []
-container.ignoredUsers = []
 
 client.login(token).catch((error) => { console.log(`The bot has crashed.\n ${error}`) })
