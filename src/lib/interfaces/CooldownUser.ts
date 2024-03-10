@@ -1,5 +1,6 @@
 import { type Snowflake } from 'discord.js'
 
-export interface User {
+export interface CooldownUser {
   id: Snowflake
+  timestamp: number
 }
