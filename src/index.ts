@@ -4,6 +4,7 @@ import { ActivityType, GatewayIntentBits } from 'discord.js'
 import { config } from 'dotenv'
 import { type Guild } from './lib/interfaces/Guild'
 import { type CooldownGuild } from './lib/interfaces/CooldownGuild'
+import { type Session } from './lib/interfaces/Session'
 config()
 
 // Database init
@@ -15,6 +16,7 @@ declare module '@sapphire/pieces' {
     rememberedUsers: Guild[]
     ignoredUsers: Guild[]
     usersInCooldown: CooldownGuild[]
+    sessions: Session[]
   }
 }
 
@@ -22,6 +24,7 @@ container.db = prisma
 container.rememberedUsers = []
 container.ignoredUsers = []
 container.usersInCooldown = []
+container.sessions = []
 
 const token = process.env.BOT_TOKEN
 
