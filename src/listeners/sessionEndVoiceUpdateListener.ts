@@ -20,6 +20,7 @@ export class SessionEndVoiceStateUpdateListener extends Listener {
     const guildPrivateVc = await guildHandler.getGuildPrivateVc(newState.guild.id)
     if (leftChannel === guildPrivateVc) {
       if (oldState.channel!.members.size === 0) {
+        // Check channel is valid
         const guildTextChannelId = await guildHandler.getGuildTextChannel(oldState.guild.id)
         if (guildTextChannelId == null) return
         const guildTextChannel = await oldState.guild.channels.fetch(guildTextChannelId)

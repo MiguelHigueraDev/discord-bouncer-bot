@@ -3,11 +3,12 @@
  * It sends notifications and moves members automatically
  */
 import { Listener } from '@sapphire/framework'
-import { ActionRowBuilder, ButtonBuilder, ButtonStyle, ComponentType, EmbedBuilder, type GuildMember, type Message, type TextBasedChannel, type VoiceState } from 'discord.js'
+import { ActionRowBuilder, ButtonBuilder, ButtonStyle, ComponentType, EmbedBuilder, type VoiceBasedChannel, type GuildMember, type Message, type TextBasedChannel, type VoiceState } from 'discord.js'
 import guildHandler from '../lib/database/guildHandler'
 import { type GuildChannels } from '../lib/interfaces/GuildChannels'
 import voiceStoresManager from '../lib/helpers/voiceStoresManager'
 import sessionManager from '../lib/helpers/sessionManager'
+import audioManager from '../lib/audio/audioManager'
 
 export class UsersVoiceStateUpdateListener extends Listener {
   public constructor (context: Listener.LoaderContext, options: Listener.Options) {
@@ -63,6 +64,9 @@ export class UsersVoiceStateUpdateListener extends Listener {
       if (textChannel.isTextBased()) {
         // Send join request and handle button clicks
         await this.sendJoinRequestToTextChannel(textChannel, guildChannels, user)
+        // Get voice channel and send audio notification
+        const voiceChannel = await newState.guild.channels.fetch(guildPrivateVc)
+        await audioManager.sendAudioNotification(voiceChannel as VoiceBasedChannel)
       }
     }
   }
