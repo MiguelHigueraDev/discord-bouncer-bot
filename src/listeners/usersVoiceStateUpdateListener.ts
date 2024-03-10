@@ -82,12 +82,14 @@ export class UsersVoiceStateUpdateListener extends Listener {
    * @param {string} userId - the user id
    * @return {EmbedBuilder} the embed builder for the join request
    */
-  private makeEmbed (guildChannels: GuildChannels, userId: string): EmbedBuilder {
+  private makeEmbed (guildChannels: GuildChannels, user: GuildMember): EmbedBuilder {
     const { privateVcId } = guildChannels
     const embed = new EmbedBuilder()
       .setColor('Blurple')
       .setTitle('Join Request')
-      .setDescription(`<@${userId}> wants to join the <#${privateVcId}> channel.`)
+      .setDescription(`<@${user.id}> wants to join the <#${privateVcId}> channel.`)
+      .setThumbnail(user.displayAvatarURL())
+      .setFooter({ text: `Requested by ${user.user.username}` })
     return embed
   }
 
@@ -127,11 +129,11 @@ export class UsersVoiceStateUpdateListener extends Listener {
    *
    * @param {TextBasedChannel} textChannel - the text channel to send the join request to
    * @param {GuildChannels} guildChannels - the guild channels
-   * @param {string} userId - the user ID
+   * @param {GuildMember} user - the user object
    * @return {Promise<void>} a promise that resolves once the join request is sent
    */
   private async sendJoinRequestToTextChannel (textChannel: TextBasedChannel, guildChannels: GuildChannels, user: GuildMember) {
-    const embed = this.makeEmbed(guildChannels, user.id)
+    const embed = this.makeEmbed(guildChannels, user)
     const buttonRow = this.makeButtons()
     const message = await textChannel.send({ embeds: [embed], components: [buttonRow] })
 
@@ -152,7 +154,7 @@ export class UsersVoiceStateUpdateListener extends Listener {
         await user.voice.setChannel(guildChannels.privateVcId)
         await interaction.reply({ content: 'User moved to private VC and remembered for current session.', ephemeral: true })
       } else if (interaction.customId === 'ignore') {
-        // Todo: ignore
+        // Ignore user for current session
         voiceStoresManager.setIgnoredUser(user.id, user.guild.id)
         await interaction.reply({ content: 'User ignored for current session.', ephemeral: true })
       }
