@@ -2,7 +2,7 @@ import { AudioPlayerStatus, createAudioPlayer, createAudioResource, getVoiceConn
 import { type VoiceBasedChannel } from 'discord.js'
 const connectToVoiceChannel = async (channel: VoiceBasedChannel): Promise<void> => {
   try {
-    const connection = joinVoiceChannel({
+    joinVoiceChannel({
       channelId: channel.id,
       guildId: channel.guild.id,
       adapterCreator: channel.guild.voiceAdapterCreator
@@ -20,7 +20,7 @@ const playAudio = async (guildId: string): Promise<void> => {
     }
 
     const player = createAudioPlayer()
-    const subscription = connection.subscribe(player)
+    connection.subscribe(player)
     const resource = createAudioResource('')
     player.play(resource)
 

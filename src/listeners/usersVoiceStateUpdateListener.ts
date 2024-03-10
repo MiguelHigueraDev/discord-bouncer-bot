@@ -47,6 +47,10 @@ export class UsersVoiceStateUpdateListener extends Listener {
 
     // Check if joined channel is waiting room for this server
     if (guildWaitingVc === joinedChannel) {
+      // Check if private channel is not empty
+      const privateChannel = await newState.guild.channels.fetch(guildPrivateVc) as VoiceBasedChannel
+      if (privateChannel == null) return
+      if (privateChannel.members.size === 0) return
       // Check if user is stored in remembered users for the session
       // If stored, just move user to it
       if (voiceStoresManager.checkIfUserIsRemembered(user.id, guildId)) {
@@ -173,7 +177,7 @@ export class UsersVoiceStateUpdateListener extends Listener {
         // Disable buttons
         await message.edit({ components: [this.makeDisabledButtons()] })
       } catch (error) {
-        await interaction.reply({ content: 'Error moving user to private VC. They might have left a VC in this server.', ephemeral: true })
+        await interaction.reply({ content: 'Error moving user to private VC. If they haven\'t left the VC, check that I have permissions to connect to the VC and to move members.', ephemeral: true })
         await message.edit({ components: [this.makeDisabledButtons()] })
       }
     })
