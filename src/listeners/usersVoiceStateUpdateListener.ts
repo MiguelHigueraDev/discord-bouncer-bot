@@ -1,10 +1,14 @@
+/**
+ * This one handles all the users joining the waiting channel (users)
+ * It sends notifications and moves members automatically
+ */
 import { Listener } from '@sapphire/framework'
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle, ComponentType, EmbedBuilder, type GuildMember, type Message, type TextBasedChannel, type VoiceState } from 'discord.js'
 import guildHandler from '../lib/database/guildHandler'
 import { type GuildChannels } from '../lib/interfaces/GuildChannels'
 import voiceStoresManager from '../lib/helpers/voiceStoresManager'
 
-export class VoiceStateUpdateListener extends Listener {
+export class UsersVoiceStateUpdateListener extends Listener {
   public constructor (context: Listener.LoaderContext, options: Listener.Options) {
     super(context, {
       ...options,
@@ -102,6 +106,12 @@ export class VoiceStateUpdateListener extends Listener {
     return row
   }
 
+  /**
+   * Creates and returns a new action row with disabled buttons.
+   *
+   * @param None
+   * @return {ActionRowBuilder<ButtonBuilder>} The action row with disabled buttons
+   */
   private makeDisabledButtons (): ActionRowBuilder<ButtonBuilder> {
     const row = new ActionRowBuilder<ButtonBuilder>()
     const moveButton = new ButtonBuilder().setCustomId('move').setStyle(ButtonStyle.Primary).setLabel('Move').setDisabled(true)
