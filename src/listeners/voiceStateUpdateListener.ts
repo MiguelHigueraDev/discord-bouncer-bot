@@ -2,6 +2,7 @@ import { Listener } from '@sapphire/framework'
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle, ComponentType, EmbedBuilder, type GuildMember, type Message, type TextBasedChannel, type VoiceState } from 'discord.js'
 import guildHandler from '../lib/database/guildHandler'
 import { type GuildChannels } from '../lib/interfaces/GuildChannels'
+import voiceStoresManager from '../lib/helpers/voiceStoresManager'
 
 export class VoiceStateUpdateListener extends Listener {
   public constructor (context: Listener.LoaderContext, options: Listener.Options) {
@@ -14,9 +15,14 @@ export class VoiceStateUpdateListener extends Listener {
   public async run (oldState: VoiceState, newState: VoiceState) {
     const joinedChannel = newState.channelId
     const guildId = newState.guild.id
-    const guildPrivateVc = await guildHandler.getGuildPrivateVc(guildId)
+    const user = newState.member!
+
+    // Check if user is ignored and return early if it is
+    if (voiceStoresManager.checkIfUserIsIgnored(user.id, guildId)) return
+
     const guildWaitingVc = await guildHandler.getGuildWaitingVc(guildId)
     const guildTextChannel = await guildHandler.getGuildTextChannel(guildId)
+    const guildPrivateVc = await guildHandler.getGuildPrivateVc(guildId)
 
     // Check that all three channels are set up
     if (guildPrivateVc == null || guildWaitingVc == null || guildTextChannel == null) return
@@ -32,14 +38,23 @@ export class VoiceStateUpdateListener extends Listener {
 
     // Check if joined channel is waiting room for this server
     if (guildWaitingVc === joinedChannel) {
-      // Check if user is in cooldown (todo)
+      // Check if user is stored in remembered users for the session
+      // If stored, just move user to it
+      if (voiceStoresManager.checkIfUserIsRemembered(user.id, guildId)) {
+        return await user.voice.setChannel(guildPrivateVc)
+      }
 
-      // Send message to text channel and set cooldown for user (todo)
+      // Check if user is in cooldown
+      if (voiceStoresManager.checkIfUserIsInCooldown(user.id, guildId)) return
+
+      // Set cooldown for user and guild
+      voiceStoresManager.setCooldown(user.id, guildId)
+      // Send message to text channel
       const textChannel = await newState.guild.channels.fetch(guildTextChannel)
       if (textChannel == null) return
       if (textChannel.isTextBased()) {
         // Send join request and handle button clicks
-        await this.sendJoinRequestToTextChannel(textChannel, guildChannels, newState.member!)
+        await this.sendJoinRequestToTextChannel(textChannel, guildChannels, user)
       }
     }
   }
@@ -117,19 +132,22 @@ export class VoiceStateUpdateListener extends Listener {
     const collector = message.createMessageComponentCollector({ componentType: ComponentType.Button, time: 900_000 })
 
     collector.on('collect', async (interaction) => {
+      collector.stop()
       if (interaction.customId === 'move') {
         await user.voice.setChannel(guildChannels.privateVcId)
         await interaction.reply({ content: 'User moved to private VC.', ephemeral: true })
       } else if (interaction.customId === 'remember') {
+        // Set user as remembered and move them to the channel
+        voiceStoresManager.setRememberedUser(user.id, user.guild.id)
         await user.voice.setChannel(guildChannels.privateVcId)
         await interaction.reply({ content: 'User moved to private VC and remembered for current session.', ephemeral: true })
-        // Todo: remember
       } else if (interaction.customId === 'ignore') {
         // Todo: ignore
+        voiceStoresManager.setIgnoredUser(user.id, user.guild.id)
+        await interaction.reply({ content: 'User ignored for current session.', ephemeral: true })
       }
-      // Disable buttons and stop collector
+      // Disable buttons
       await message.edit({ components: [this.makeDisabledButtons()] })
-      collector.stop()
     })
   }
 }

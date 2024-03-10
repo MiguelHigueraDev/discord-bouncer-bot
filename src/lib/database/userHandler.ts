@@ -156,60 +156,8 @@ const toggleAllowlistStatus = async (userId: string, guildId: string, allowliste
   }
 }
 
-/**
- * Retrieves the last request date for a specific user in a guild.
- *
- * @param {string} userId - The ID of the user
- * @param {string} guildId - The ID of the guild
- * @return {Promise<Date | null>} The last request date if found, otherwise null
- */
-const getUserLastRequest = async (userId: string, guildId: string): Promise<Date | null> => {
-  try {
-    const foundGuildUser = await container.db.guildUser.findFirst({ where: { userId, guildId } })
-    if (foundGuildUser == null) {
-      return null
-    }
-    return foundGuildUser.lastRequest
-  } catch (error) {
-    console.error('An error has ocurred while running userHandler:getUserLastRequest', error)
-    return null
-  }
-}
-
-/**
- * Updates the last request timestamp for the user in the specified guild.
- *
- * @param {string} userId - The ID of the user
- * @param {string} guildId - The ID of the guild
- * @return {Promise<boolean>} A boolean indicating the success of the update
- */
-const updateUserLastRequest = async (userId: string, guildId: string): Promise<boolean> => {
-  try {
-    const updated = await updateUserStatus(userId)
-    if (!updated) {
-      return false
-    }
-
-    await container.db.guildUser.update({
-      where: {
-        userId_guildId: {
-          userId,
-          guildId
-        }
-      },
-      data: {
-        lastRequest: new Date()
-      }
-    })
-    return true
-  } catch (error) {
-    console.error('An error has ocurred while running userHandler:updateUserLastRequest', error)
-    return false
-  }
-}
-
 const userHandler = {
-  updateUserStatus, updateGuildUserStatus, toggleBlocklistStatus, toggleAllowlistStatus, getUserLastRequest, updateUserLastRequest
+  updateUserStatus, updateGuildUserStatus, toggleBlocklistStatus, toggleAllowlistStatus
 }
 
 export default userHandler
