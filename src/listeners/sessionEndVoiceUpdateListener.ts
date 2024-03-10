@@ -5,6 +5,7 @@
 import { Listener } from '@sapphire/framework'
 import { EmbedBuilder, type VoiceState } from 'discord.js'
 import guildHandler from '../lib/database/guildHandler'
+import sessionManager from '../lib/helpers/sessionManager'
 
 export class SessionEndVoiceStateUpdateListener extends Listener {
   public constructor (context: Listener.LoaderContext, options: Listener.Options) {
@@ -27,6 +28,7 @@ export class SessionEndVoiceStateUpdateListener extends Listener {
         // Destroy session
         const embed = this.makeEmbed()
         if (guildTextChannel.isTextBased()) {
+          sessionManager.destroySession(oldState.guild.id)
           await guildTextChannel.send({ embeds: [embed] })
         }
       }

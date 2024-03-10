@@ -25,7 +25,7 @@ const startSession = (guildId: string) => {
  * @param {string} guildId - The ID of the guild for which the session needs to be destroyed.
  * @return {void}
  */
-const destroySession = (guildId: string) => {
+const destroySession = (guildId: string): void => {
   container.sessions = container.sessions.filter((g) => g.guildId !== guildId)
 }
 
@@ -35,7 +35,7 @@ const destroySession = (guildId: string) => {
  * @param {string} guildId - The ID of the guild to check for session existence.
  * @return {boolean} true if session exists, false otherwise
  */
-const checkIfSessionExists = (guildId: string) => {
+const checkIfSessionExists = (guildId: string): boolean => {
   const guild = container.sessions.find((g) => g.guildId === guildId)
   if (guild == null) return false
   return true

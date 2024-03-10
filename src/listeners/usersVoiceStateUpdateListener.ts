@@ -7,6 +7,7 @@ import { ActionRowBuilder, ButtonBuilder, ButtonStyle, ComponentType, EmbedBuild
 import guildHandler from '../lib/database/guildHandler'
 import { type GuildChannels } from '../lib/interfaces/GuildChannels'
 import voiceStoresManager from '../lib/helpers/voiceStoresManager'
+import sessionManager from '../lib/helpers/sessionManager'
 
 export class UsersVoiceStateUpdateListener extends Listener {
   public constructor (context: Listener.LoaderContext, options: Listener.Options) {
@@ -20,6 +21,9 @@ export class UsersVoiceStateUpdateListener extends Listener {
     const joinedChannel = newState.channelId
     const guildId = newState.guild.id
     const user = newState.member!
+
+    // Check if session exists for this guild
+    if (!sessionManager.checkIfSessionExists(guildId)) return
 
     // Check if user is ignored and return early if it is
     if (voiceStoresManager.checkIfUserIsIgnored(user.id, guildId)) return
@@ -79,7 +83,7 @@ export class UsersVoiceStateUpdateListener extends Listener {
    * Creates and returns an EmbedBuilder for a join request.
    *
    * @param {GuildChannels} guildChannels - the guild channels
-   * @param {string} userId - the user id
+   * @param {GuildMember} user - the user
    * @return {EmbedBuilder} the embed builder for the join request
    */
   private makeEmbed (guildChannels: GuildChannels, user: GuildMember): EmbedBuilder {
@@ -145,21 +149,29 @@ export class UsersVoiceStateUpdateListener extends Listener {
 
     collector.on('collect', async (interaction) => {
       collector.stop()
-      if (interaction.customId === 'move') {
-        await user.voice.setChannel(guildChannels.privateVcId)
-        await interaction.reply({ content: 'User moved to private VC.', ephemeral: true })
-      } else if (interaction.customId === 'remember') {
-        // Set user as remembered and move them to the channel
-        voiceStoresManager.setRememberedUser(user.id, user.guild.id)
-        await user.voice.setChannel(guildChannels.privateVcId)
-        await interaction.reply({ content: 'User moved to private VC and remembered for current session.', ephemeral: true })
-      } else if (interaction.customId === 'ignore') {
-        // Ignore user for current session
-        voiceStoresManager.setIgnoredUser(user.id, user.guild.id)
-        await interaction.reply({ content: 'User ignored for current session.', ephemeral: true })
+      try {
+        if (interaction.customId === 'move') {
+          // Clear cooldown for user
+          voiceStoresManager.clearCooldown(user.id, user.guild.id)
+          await user.voice.setChannel(guildChannels.privateVcId)
+          await interaction.reply({ content: 'User moved to private VC.', ephemeral: true })
+        } else if (interaction.customId === 'remember') {
+          // Set user as remembered and move them to the channel
+          voiceStoresManager.setRememberedUser(user.id, user.guild.id)
+          voiceStoresManager.clearCooldown(user.id, user.guild.id)
+          await user.voice.setChannel(guildChannels.privateVcId)
+          await interaction.reply({ content: 'User moved to private VC and remembered for current session.', ephemeral: true })
+        } else if (interaction.customId === 'ignore') {
+          // Ignore user for current session
+          voiceStoresManager.setIgnoredUser(user.id, user.guild.id)
+          await interaction.reply({ content: 'User ignored for current session.', ephemeral: true })
+        }
+        // Disable buttons
+        await message.edit({ components: [this.makeDisabledButtons()] })
+      } catch (error) {
+        await interaction.reply({ content: 'Error moving user to private VC. They might have left a VC in this server.', ephemeral: true })
+        await message.edit({ components: [this.makeDisabledButtons()] })
       }
-      // Disable buttons
-      await message.edit({ components: [this.makeDisabledButtons()] })
     })
   }
 }

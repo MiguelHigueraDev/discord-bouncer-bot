@@ -7,44 +7,36 @@
  */
 import { container } from '@sapphire/framework'
 
-/**
- * Sets a cooldown for a user in a guild.
- *
- * @param {string} userId - the ID of the user
- * @param {string} guildId - the ID of the guild
- */
 const setCooldown = (userId: string, guildId: string) => {
-  // Check if guild is already stored
-  let guild = container.usersInCooldown.find((g) => g.id === guildId)
-  if (guild == null) {
-    // If not, push it and store the user after
-    container.usersInCooldown.push({ id: guildId, users: [] })
-    guild = container.usersInCooldown.find((g) => g.id === guildId)
-  }
+  // Check if session is already stored
+  const session = container.sessions.find((s) => s.guildId === guildId)
+  if (session == null) return
 
-  // Check if user exists in guild
-  const user = guild?.users.find((u) => u.id === userId)
+  const user = session.usersInCooldown.find((u) => u.id === userId)
   if (user == null) {
-    guild?.users.push({ id: userId, timestamp: Date.now() })
+    session.usersInCooldown.push({ id: userId, timestamp: Date.now() })
   } else {
     user.timestamp = Date.now()
   }
 }
 
-/**
-   * Check if the user is in cooldown for a specific guild.
-   *
-   * @param {string} userId - The ID of the user
-   * @param {string} guildId - The ID of the guild
-   * @return {boolean} Whether the user is in cooldown
-   */
+const clearCooldown = (userId: string, guildId: string) => {
+  // Check if session is already stored
+  const session = container.sessions.find((s) => s.guildId === guildId)
+  if (session == null) return
+
+  const user = session.usersInCooldown.find((u) => u.id === userId)
+  if (user == null) return
+  session.usersInCooldown = session.usersInCooldown.filter((u) => u.id !== userId)
+}
+
 const checkIfUserIsInCooldown = (userId: string, guildId: string): boolean => {
-  const currentGuild = container.usersInCooldown.find((g) => g.id === guildId)
-  if (currentGuild == null) return false
+  const session = container.sessions.find((s) => s.guildId === guildId)
+  if (session == null) return false
 
-  if (currentGuild.users.length === 0) return false
-  const user = currentGuild.users.find((u) => u.id === userId)
+  if (session.usersInCooldown.length === 0) return false
 
+  const user = session.usersInCooldown.find((u) => u.id === userId)
   if (user == null) return false
   // Check if 15 minutes have passed since user tried to join
   if (Date.now() - user.timestamp > 15 * 60 * 1000) {
@@ -53,86 +45,55 @@ const checkIfUserIsInCooldown = (userId: string, guildId: string): boolean => {
   return true
 }
 
-/**
- * Set remembered user for a given guild and user.
- *
- * @param {string} userId - The ID of the user
- * @param {string} guildId - The ID of the guild
- */
 const setRememberedUser = (userId: string, guildId: string) => {
-  // Check if guild is already stored
-  let guild = container.rememberedUsers.find((g) => g.id === guildId)
-  if (guild == null) {
-    // If not, push it and store the user after
-    container.rememberedUsers.push({ id: guildId, users: [] })
-    guild = container.rememberedUsers.find((g) => g.id === guildId)
-  }
+  // Check if session is already stored
+  const session = container.sessions.find((s) => s.guildId === guildId)
+  if (session == null) return
 
-  const user = guild?.users.find((u) => u.id === userId)
+  const user = session.rememberedUsers.find((u) => u.id === userId)
   if (user == null) {
-    guild?.users.push({ id: userId })
+    session.rememberedUsers.push({ id: userId })
   }
 }
 
-/**
- * Checks if the user is remembered in the given guild.
- *
- * @param {string} userId - The ID of the user to check.
- * @param {string} guildId - The ID of the guild to check.
- * @return {boolean} Whether the user is remembered in the guild or not.
- */
 const checkIfUserIsRemembered = (userId: string, guildId: string): boolean => {
-  const currentGuild = container.rememberedUsers.find((g) => g.id === guildId)
-  if (currentGuild == null) return false
+  const session = container.sessions.find((s) => s.guildId === guildId)
+  if (session == null) return false
 
-  if (currentGuild.users.length === 0) return false
-  const user = currentGuild.users.find((u) => u.id === userId)
+  const rememberedUsers = session.rememberedUsers
+  if (rememberedUsers.length === 0) return false
 
+  const user = session.rememberedUsers.find((u) => u.id === userId)
   if (user == null) return false
   return true
 }
 
-/**
- * Sets the ignored user for a specific guild if not already ignored.
- *
- * @param {string} userId - The ID of the user to ignore.
- * @param {string} guildId - The ID of the guild to set the ignored user for.
- */
 const setIgnoredUser = (userId: string, guildId: string) => {
-  // Check if guild is already stored
-  let guild = container.ignoredUsers.find((g) => g.id === guildId)
-  if (guild == null) {
-    // If not, push it and store the user after
-    container.ignoredUsers.push({ id: guildId, users: [] })
-    guild = container.ignoredUsers.find((g) => g.id === guildId)
-  }
+  // Check if session is already stored
+  const session = container.sessions.find((s) => s.guildId === guildId)
+  if (session == null) return
 
-  const user = guild?.users.find((u) => u.id === userId)
+  const user = session.ignoredUsers.find((u) => u.id === userId)
   if (user == null) {
-    guild?.users.push({ id: userId })
+    session.ignoredUsers.push({ id: userId })
   }
 }
 
-/**
- * Checks if a user is ignored in a specific guild.
- *
- * @param {string} userId - The ID of the user to check.
- * @param {string} guildId - The ID of the guild to check.
- * @return {boolean} Returns true if the user is ignored in the specified guild, otherwise false.
- */
 const checkIfUserIsIgnored = (userId: string, guildId: string): boolean => {
-  const currentGuild = container.ignoredUsers.find((g) => g.id === guildId)
-  if (currentGuild == null) return false
+  const session = container.sessions.find((s) => s.guildId === guildId)
+  if (session == null) return false
 
-  if (currentGuild.users.length === 0) return false
-  const user = currentGuild.users.find((u) => u.id === userId)
+  const ignoredUsers = session.ignoredUsers
+  if (ignoredUsers.length === 0) return false
 
+  const user = session.ignoredUsers.find((u) => u.id === userId)
   if (user == null) return false
   return true
 }
 
 const voiceStoresManager = {
   setCooldown,
+  clearCooldown,
   checkIfUserIsInCooldown,
   setRememberedUser,
   checkIfUserIsRemembered,

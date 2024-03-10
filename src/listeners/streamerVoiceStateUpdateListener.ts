@@ -7,6 +7,7 @@
 import { Listener } from '@sapphire/framework'
 import { EmbedBuilder, type VoiceState } from 'discord.js'
 import guildHandler from '../lib/database/guildHandler'
+import sessionManager from '../lib/helpers/sessionManager'
 
 export class StreamerVoiceUpdateListener extends Listener {
   public constructor (context: Listener.LoaderContext, options: Listener.Options) {
@@ -33,6 +34,7 @@ export class StreamerVoiceUpdateListener extends Listener {
         if (guildTextChannel == null) return
         if (guildTextChannel.isTextBased()) {
           // Create session
+          sessionManager.startSession(newState.guild.id)
           const embed = this.makeEmbed(waitingVcId)
           await guildTextChannel.send({ embeds: [embed] })
         }
