@@ -88,7 +88,7 @@ const getGuildBouncerStatus = async (guildId: string): Promise<boolean> => {
  * @param {string} privateVcId - The ID of the private voice channel
  * @return {Promise<boolean>} A boolean indicating whether the update was successful
  */
-const updateGuildPrivateVc = async (guildId: string, privateVcId: string): Promise<boolean> => {
+const updateGuildPrivateVcId = async (guildId: string, privateVcId: string): Promise<boolean> => {
   try {
     const updatedGuild = await updateGuildStatus(guildId)
     if (!updatedGuild) {
@@ -117,7 +117,7 @@ const updateGuildPrivateVc = async (guildId: string, privateVcId: string): Promi
  * @param {string} waitingVcId - The ID of the waiting voice channel
  * @return {Promise<boolean>} A boolean indicating whether the update was successful
  */
-const updateGuildWaitingVc = async (guildId: string, waitingVcId: string): Promise<boolean> => {
+const updateGuildWaitingVcId = async (guildId: string, waitingVcId: string): Promise<boolean> => {
   try {
     const updatedGuild = await updateGuildStatus(guildId)
     if (!updatedGuild) {
@@ -146,7 +146,7 @@ const updateGuildWaitingVc = async (guildId: string, waitingVcId: string): Promi
  * @param {string} textChannelId - The ID of the text channel
  * @return {Promise<boolean>} Whether the text channel was successfully updated
  */
-const updateGuildTextChannel = async (guildId: string, textChannelId: string): Promise<boolean> => {
+const updateGuildTextChannelId = async (guildId: string, textChannelId: string): Promise<boolean> => {
   try {
     const updatedGuild = await updateGuildStatus(guildId)
     if (!updatedGuild) {
@@ -174,7 +174,7 @@ const updateGuildTextChannel = async (guildId: string, textChannelId: string): P
  * @param {string} guildId - The ID of the guild
  * @return {Promise<string | null>} The ID of the private voice channel or null if not found
  */
-const getGuildPrivateVc = async (guildId: string): Promise<string | null> => {
+const getGuildPrivateVcId = async (guildId: string): Promise<string | null> => {
   const guild = await container.db.guild.findUnique({ where: { id: guildId } })
   return guild?.privateVcId ?? null
 }
@@ -185,7 +185,7 @@ const getGuildPrivateVc = async (guildId: string): Promise<string | null> => {
  * @param {string} guildId - The ID of the guild
  * @return {Promise<string | null>} The ID of the waiting room voice channel or null if not found
  */
-const getGuildWaitingVc = async (guildId: string): Promise<string | null> => {
+const getGuildWaitingVcId = async (guildId: string): Promise<string | null> => {
   const guild = await container.db.guild.findUnique({ where: { id: guildId } })
   return guild?.waitingVcId ?? null
 }
@@ -196,7 +196,7 @@ const getGuildWaitingVc = async (guildId: string): Promise<string | null> => {
  * @param {string} guildId - The ID of the guild
  * @return {Promise<string | null>} The ID of the text channel or null if not found
  */
-const getGuildTextChannel = async (guildId: string): Promise<string | null> => {
+const getGuildTextChannelId = async (guildId: string): Promise<string | null> => {
   const guild = await container.db.guild.findUnique({ where: { id: guildId } })
   return guild?.textChannelId ?? null
 }
@@ -209,12 +209,18 @@ const getGuildTextChannel = async (guildId: string): Promise<string | null> => {
  */
 const checkAllChannelsAreSetUp = async (guildId: string): Promise<boolean> => {
   return (
-    (await getGuildPrivateVc(guildId)) != null &&
-    (await getGuildWaitingVc(guildId)) != null &&
-    (await getGuildTextChannel(guildId)) != null
+    (await getGuildPrivateVcId(guildId)) != null &&
+    (await getGuildWaitingVcId(guildId)) != null &&
+    (await getGuildTextChannelId(guildId)) != null
   )
 }
 
+/**
+ * Resets the guild bouncer by updating the database with the provided guild ID. Resets channels to null
+ *
+ * @param {string} guildId - The ID of the guild to reset the bouncer for.
+ * @return {Promise<boolean>} A boolean indicating whether the guild bouncer was successfully reset.
+ */
 const resetGuildBouncer = async (guildId: string): Promise<boolean> => {
   try {
     await container.db.guild.update({
@@ -239,12 +245,12 @@ const guildHandler = {
   updateGuildStatus,
   toggleGuildBouncer,
   getGuildBouncerStatus,
-  updateGuildPrivateVc,
-  updateGuildWaitingVc,
-  updateGuildTextChannel,
-  getGuildPrivateVc,
-  getGuildWaitingVc,
-  getGuildTextChannel,
+  updateGuildPrivateVcId,
+  updateGuildWaitingVcId,
+  updateGuildTextChannelId,
+  getGuildPrivateVcId,
+  getGuildWaitingVcId,
+  getGuildTextChannelId,
   checkAllChannelsAreSetUp,
   resetGuildBouncer
 }
