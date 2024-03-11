@@ -4,7 +4,6 @@
  */
 import { Listener } from '@sapphire/framework'
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle, ComponentType, EmbedBuilder, type VoiceBasedChannel, type GuildMember, type Message, type TextBasedChannel, type VoiceState } from 'discord.js'
-import guildHandler from '../lib/database/guildHandler'
 import { type GuildChannels } from '../lib/interfaces/GuildChannels'
 import voiceStoresManager from '../lib/helpers/voiceStoresManager'
 import sessionManager from '../lib/helpers/sessionManager'
@@ -23,37 +22,26 @@ export class UsersVoiceStateUpdateListener extends Listener {
     const guildId = newState.guild.id
     const user = newState.member!
 
-    // Check if session exists for this guild
-    if (!sessionManager.checkIfSessionExists(guildId)) return
-
     // Check if user is ignored and return early if it is
     if (voiceStoresManager.checkIfUserIsIgnored(user.id, guildId)) return
 
-    const guildWaitingVc = await guildHandler.getGuildWaitingVc(guildId)
-    const guildTextChannel = await guildHandler.getGuildTextChannel(guildId)
-    const guildPrivateVc = await guildHandler.getGuildPrivateVc(guildId)
+    // Get current session and channels
+    const session = sessionManager.getSession(guildId)
+    // Session is not running here. Return early.
+    if (session == null) return
 
-    // Check that all three channels are set up
-    if (guildPrivateVc == null || guildWaitingVc == null || guildTextChannel == null) return
-
-    const guildChannels: GuildChannels = {
-      privateVcId: guildPrivateVc,
-      waitingVcId: guildWaitingVc,
-      textChannelId: guildTextChannel
-    }
-
-    // Check if this guild has the bouncer enabled
-    if (!await this.checkIfGuildIsValid(guildId)) return
+    const guildChannels: GuildChannels = session.channels
+    const { privateVcId, waitingVcId, textChannelId } = guildChannels
 
     // Check if joined channel is waiting room for this server
-    if (guildWaitingVc === joinedChannel) {
+    if (waitingVcId === joinedChannel) {
       // Check if private channel is not empty
-      const privateChannel = await newState.guild.channels.fetch(guildPrivateVc) as VoiceBasedChannel
+      const privateChannel = await newState.guild.channels.fetch(privateVcId) as VoiceBasedChannel
       if (privateChannel == null) return
       if (privateChannel.members.size === 0) return
       // Check if user is stored in remembered users for the session, if stored just move user to private channel
       if (voiceStoresManager.checkIfUserIsRemembered(user.id, guildId)) {
-        return await user.voice.setChannel(guildPrivateVc)
+        return await user.voice.setChannel(privateVcId)
       }
 
       // Check if user is in cooldown
@@ -62,28 +50,16 @@ export class UsersVoiceStateUpdateListener extends Listener {
       // Set cooldown for user and guild
       voiceStoresManager.setCooldown(user.id, guildId)
       // Send message to text channel
-      const textChannel = await newState.guild.channels.fetch(guildTextChannel)
+      const textChannel = await newState.guild.channels.fetch(textChannelId)
       if (textChannel == null) return
       if (textChannel.isTextBased()) {
         // Send join request and handle button clicks
         await this.sendJoinRequestToTextChannel(textChannel, guildChannels, user)
         // Get voice channel and send audio notification
-        const voiceChannel = await newState.guild.channels.fetch(guildPrivateVc)
+        const voiceChannel = await newState.guild.channels.fetch(privateVcId)
         await audioManager.sendAudioNotification(voiceChannel as VoiceBasedChannel)
       }
     }
-  }
-
-  /**
-   * Check if the guild is valid
-   * This means: has the bouncer enabled and has all three channels set up
-   *
-   * @param {string} guildId - The ID of the guild to be checked
-   * @return {Promise<boolean>} A boolean indicating if the guild is valid
-   */
-  private async checkIfGuildIsValid (guildId: string): Promise<boolean> {
-    const guildEnabled = await guildHandler.getGuildBouncerStatus(guildId)
-    return guildEnabled
   }
 
   /**
@@ -163,7 +139,7 @@ export class UsersVoiceStateUpdateListener extends Listener {
           await user.voice.setChannel(guildChannels.privateVcId)
           await interaction.reply({ content: 'User moved to private VC.', ephemeral: true })
         } else if (interaction.customId === 'remember') {
-          // Set user as remembered and move them to the channel
+          // Set user as remembered, clear cooldown and move them to the channel
           voiceStoresManager.setRememberedUser(user.id, user.guild.id)
           voiceStoresManager.clearCooldown(user.id, user.guild.id)
           await user.voice.setChannel(guildChannels.privateVcId)
@@ -173,12 +149,13 @@ export class UsersVoiceStateUpdateListener extends Listener {
           voiceStoresManager.setIgnoredUser(user.id, user.guild.id)
           await interaction.reply({ content: 'User ignored for current session.', ephemeral: true })
         }
-        // Disable buttons
-        await message.edit({ components: [this.makeDisabledButtons()] })
       } catch (error) {
         await interaction.reply({ content: 'Error moving user to private VC. If they haven\'t left the VC, check that I have permissions to connect to the VC and to move members.', ephemeral: true })
-        await message.edit({ components: [this.makeDisabledButtons()] })
       }
+    })
+
+    collector.on('end', async () => {
+      await message.edit({ components: [this.makeDisabledButtons()] })
     })
   }
 }

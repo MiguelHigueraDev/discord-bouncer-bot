@@ -21,9 +21,10 @@ export class StreamerVoiceUpdateListener extends Listener {
     const joinedChannel = newState.channelId
     const guildPrivateVc = await guildHandler.getGuildPrivateVc(newState.guild.id)
     if (joinedChannel === guildPrivateVc) {
-      // Check if member count is 1 so it only triggers on first member join
+      // Check if this guild has the bouncer enabled
+      if (!await this.checkIfGuildIsValid(newState.guild.id)) return
+
       if (newState.channel!.members.size === 1) {
-        // Start new session
         const guildTextChannelId = await guildHandler.getGuildTextChannel(newState.guild.id)
         const waitingVcId = await guildHandler.getGuildWaitingVc(newState.guild.id)
 
@@ -33,13 +34,29 @@ export class StreamerVoiceUpdateListener extends Listener {
 
         if (guildTextChannel == null) return
         if (guildTextChannel.isTextBased()) {
-          // Create session
-          sessionManager.startSession(newState.guild.id)
+          // Try starting session
+          const sessionStarted = await sessionManager.startSession(newState.guild.id)
+          if (!sessionStarted) {
+            // Handle this
+            return
+          }
           const embed = this.makeEmbed(waitingVcId)
           await guildTextChannel.send({ embeds: [embed] })
         }
       }
     }
+  }
+
+  /**
+   * Check if the guild is valid
+   * This means: has the bouncer enabled and has all three channels set up
+   *
+   * @param {string} guildId - The ID of the guild to be checked
+   * @return {Promise<boolean>} A boolean indicating if the guild is valid
+   */
+  private async checkIfGuildIsValid (guildId: string): Promise<boolean> {
+    const guildEnabled = await guildHandler.getGuildBouncerStatus(guildId)
+    return guildEnabled
   }
 
   private readonly makeEmbed = (waitingVcId: string): EmbedBuilder => {

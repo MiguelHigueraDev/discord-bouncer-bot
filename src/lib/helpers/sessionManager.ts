@@ -4,19 +4,45 @@
  * and end when everybody leaves it
  */
 import { container } from '@sapphire/framework'
+import guildHandler from '../database/guildHandler'
+import { type Session } from '../interfaces/Session'
 
 /**
- * Starts a new session for the given guild if it doesn't already exist.
+ * Start a new session for the specified guild.
  *
- * @param {string} guildId - The ID of the guild for which to start a session
+ * @param {string} guildId - The ID of the guild for which to start the session
+ * @return {Promise<boolean>} A boolean indicating whether the session was successfully started
  */
-const startSession = (guildId: string) => {
+const startSession = async (guildId: string): Promise<boolean> => {
   // Check if guild is already stored
   const guild = container.sessions.find((g) => g.guildId === guildId)
   if (guild == null) {
-    // Guild does not exist, create new session
-    container.sessions.push({ guildId, ignoredUsers: [], rememberedUsers: [], usersInCooldown: [] })
+    // Fetch channels to store them in session
+    const guildWaitingVc = await guildHandler.getGuildWaitingVc(guildId)
+    const guildPrivateVc = await guildHandler.getGuildPrivateVc(guildId)
+    const guildTextChannel = await guildHandler.getGuildTextChannel(guildId)
+
+    if (guildWaitingVc == null || guildPrivateVc == null || guildTextChannel == null) return false
+    const channels = {
+      privateVcId: guildPrivateVc,
+      waitingVcId: guildWaitingVc,
+      textChannelId: guildTextChannel
+    }
+    // Guild doesn't have an active session, create it
+    container.sessions.push({ guildId, ignoredUsers: [], rememberedUsers: [], usersInCooldown: [], channels })
+    return true
   }
+  return false
+}
+
+/**
+ * Retrieves a session for the given guild ID.
+ *
+ * @param {string} guildId - The ID of the guild
+ * @return {Session | undefined} The session for the given guild ID, or undefined if not found
+ */
+const getSession = (guildId: string): Session | undefined => {
+  return container.sessions.find((g) => g.guildId === guildId)
 }
 
 /**
@@ -37,12 +63,11 @@ const destroySession = (guildId: string): void => {
  */
 const checkIfSessionExists = (guildId: string): boolean => {
   const guild = container.sessions.find((g) => g.guildId === guildId)
-  if (guild == null) return false
-  return true
+  return (guild != null)
 }
 
 const sessionManager = {
-  startSession, destroySession, checkIfSessionExists
+  startSession, getSession, destroySession, checkIfSessionExists
 }
 
 export default sessionManager

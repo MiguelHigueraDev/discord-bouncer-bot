@@ -21,7 +21,7 @@ const playAudio = async (guildId: string): Promise<void> => {
 
     const player = createAudioPlayer()
     connection.subscribe(player)
-    const resource = createAudioResource('')
+    const resource = createAudioResource('/home/misfit/repos/discord-bouncer/src/dist/assets/bell.mp3')
     player.play(resource)
 
     // Disconnect after playing
