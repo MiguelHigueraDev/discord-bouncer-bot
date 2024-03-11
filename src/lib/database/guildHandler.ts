@@ -201,6 +201,40 @@ const getGuildTextChannel = async (guildId: string): Promise<string | null> => {
   return guild?.textChannelId ?? null
 }
 
+/**
+ * Checks if all the channels are set up for the given guild.
+ *
+ * @param {string} guildId - The ID of the guild to check for channel setup.
+ * @return {Promise<boolean>} A boolean indicating whether all channels are set up.
+ */
+const checkAllChannelsAreSetUp = async (guildId: string): Promise<boolean> => {
+  return (
+    (await getGuildPrivateVc(guildId)) != null &&
+    (await getGuildWaitingVc(guildId)) != null &&
+    (await getGuildTextChannel(guildId)) != null
+  )
+}
+
+const resetGuildBouncer = async (guildId: string): Promise<boolean> => {
+  try {
+    await container.db.guild.update({
+      where: {
+        id: guildId
+      },
+      data: {
+        enabled: false,
+        privateVcId: null,
+        waitingVcId: null,
+        textChannelId: null
+      }
+    })
+    return true
+  } catch (error) {
+    console.error('An error has ocurred while running guildHandler:resetGuildBouncer', error)
+    return false
+  }
+}
+
 const guildHandler = {
   updateGuildStatus,
   toggleGuildBouncer,
@@ -210,7 +244,9 @@ const guildHandler = {
   updateGuildTextChannel,
   getGuildPrivateVc,
   getGuildWaitingVc,
-  getGuildTextChannel
+  getGuildTextChannel,
+  checkAllChannelsAreSetUp,
+  resetGuildBouncer
 }
 
 export default guildHandler
