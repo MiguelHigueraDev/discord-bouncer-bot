@@ -60,11 +60,15 @@ A new session can be started by joining the private VC again.
 
 ## How to build
 
-First, you have to set up a database using a system that's supported by Prisma like MySQL or PostgreSQL. [Read up here](https://www.prisma.io/docs/getting-started/setup-prisma/add-to-existing-project/relational-databases/connect-your-database-typescript-postgresql) and set up the connection url in your .env file.
+The bot has some prerequisites before it can be installed:
 
-I use MySQL for my own instance.
+First, you have to set up a database using a system that's supported by Prisma like MySQL or PostgreSQL. [Read up here](https://www.prisma.io/docs/getting-started/setup-prisma/add-to-existing-project/relational-databases/connect-your-database-typescript-postgresql) and set up the connection url in your .env file. In my case I use MySQL.
 
 As with all Discord bots, you have to also create a new application if you haven't in [Discord's Developer Portal](https://discord.com/developers/applications) and get your bot token and client id/secret.
+
+Finally, for the audio notifications to work, you have to install [FFmpeg](https://ffmpeg.org/). If you are having issues while installing the audio dependencies, check out this [discord.js guide](https://discordjs.guide/voice/#extra-dependencies).
+
+The instructions:
 
 1. Clone the repo
 2. Set up your database using the instructions provided above
