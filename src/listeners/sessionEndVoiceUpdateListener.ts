@@ -16,6 +16,9 @@ export class SessionEndVoiceStateUpdateListener extends Listener {
   }
 
   public async run (oldState: VoiceState, newState: VoiceState) {
+    // Check if session exists in the first place
+    if (!sessionManager.checkIfSessionExists(oldState.guild.id)) return
+
     const leftChannel = oldState.channelId
     const guildPrivateVc = await guildHandler.getGuildPrivateVc(newState.guild.id)
     if (leftChannel === guildPrivateVc) {
@@ -40,7 +43,7 @@ export class SessionEndVoiceStateUpdateListener extends Listener {
     const embed = new EmbedBuilder()
       .setColor('Red')
       .setTitle('Session ended')
-      .setDescription('The session has ended.')
+      .setDescription('All people have left the private voice channel. The session has ended.')
     return embed
   }
 }
