@@ -69,7 +69,7 @@ As with all Discord bots, you have to also create a new application if you haven
 1. Clone the repo
 2. Set up your database using the instructions provided above
 3. Set up your bot token and client id/secrets in the .env file located in `src` (rename it to .env instead of .env.example)
-4. Install all your dependencies using your package manager of choice. For example: `npm install`
+4. Install all the dependencies using your package manager of choice. For example: `npm install`
 6. Navigate to the `src` folder and run `npx prisma push` to sync your database with the schema and `npx prisma generate` to generate your Prisma Client to be able to interact with the database
 7. In the `src` folder run `tsc` to compile all TypeScript into JavaScript.
 8. The output will be in the dist folder. You can run the bot by using `node index.js`
