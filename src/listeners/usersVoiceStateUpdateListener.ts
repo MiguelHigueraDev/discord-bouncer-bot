@@ -134,7 +134,7 @@ export class UsersVoiceStateUpdateListener extends Listener {
       collector.stop()
       try {
         if (interaction.customId === 'move') {
-          // Clear cooldown for user
+          // Clear cooldown for user and move it to the channel
           voiceStoresManager.clearCooldown(user.id, user.guild.id)
           await user.voice.setChannel(guildChannels.privateVcId)
           await interaction.reply({ content: 'User moved to private VC.', ephemeral: true })

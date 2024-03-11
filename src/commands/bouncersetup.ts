@@ -91,7 +91,7 @@ export class BouncerSetupCommand extends Command {
 
       // Voice channels
       if (subcommand === 'set-private-vc') {
-        const updated = await guildHandler.updateGuildPrivateVc(interaction.guild!.id, channel.id)
+        const updated = await guildHandler.updateGuildPrivateVcId(interaction.guild!.id, channel.id)
 
         if (!updated) {
           return await interaction.reply({ content: 'Error updating the private voice channel.', ephemeral: true })
@@ -99,7 +99,7 @@ export class BouncerSetupCommand extends Command {
           return await interaction.reply({ content: `The private channel has been updated to <#${channel.id}>.`, ephemeral: true })
         }
       } else {
-        const updated = await guildHandler.updateGuildWaitingVc(interaction.guild!.id, channel.id)
+        const updated = await guildHandler.updateGuildWaitingVcId(interaction.guild!.id, channel.id)
 
         if (!updated) {
           return await interaction.reply({ content: 'Error updating the waiting room voice channel.', ephemeral: true })
@@ -124,7 +124,7 @@ export class BouncerSetupCommand extends Command {
         return await interaction.reply({ content: 'I do not have permission(s) to perform this action.\nMissing permissions: `' + hasPermissions.join(', ') + '`', ephemeral: true })
       }
 
-      const updated = await guildHandler.updateGuildTextChannel(interaction.guild!.id, channel.id)
+      const updated = await guildHandler.updateGuildTextChannelId(interaction.guild!.id, channel.id)
       if (!updated) {
         return await interaction.reply({ content: 'Error updating the text channel.', ephemeral: true })
       } else {
@@ -167,9 +167,9 @@ export class BouncerSetupCommand extends Command {
   }
 
   private readonly makeChannelsEmbed = async (guildId: string): Promise<EmbedBuilder> => {
-    const privateVcId = await guildHandler.getGuildPrivateVc(guildId)
-    const waitingVcId = await guildHandler.getGuildWaitingVc(guildId)
-    const textChannelId = await guildHandler.getGuildTextChannel(guildId)
+    const privateVcId = await guildHandler.getGuildPrivateVcId(guildId)
+    const waitingVcId = await guildHandler.getGuildWaitingVcId(guildId)
+    const textChannelId = await guildHandler.getGuildTextChannelId(guildId)
 
     const embed = new EmbedBuilder()
       .setTitle('Bouncer Status')

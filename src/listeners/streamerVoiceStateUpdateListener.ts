@@ -21,18 +21,18 @@ export class StreamerVoiceUpdateListener extends Listener {
 
   public async run (oldState: VoiceState, newState: VoiceState) {
     const joinedChannel = newState.channelId
-    const guildPrivateVc = await guildHandler.getGuildPrivateVc(newState.guild.id)
-    if (joinedChannel === guildPrivateVc) {
+    const guildPrivateVcId = await guildHandler.getGuildPrivateVcId(newState.guild.id)
+    if (joinedChannel === guildPrivateVcId) {
       // Check if this guild has the bouncer enabled
       if (!await this.checkIfGuildIsValid(newState.guild.id)) return
 
       if (newState.channel!.members.size === 1) {
-        const guildTextChannelId = await guildHandler.getGuildTextChannel(newState.guild.id)
-        const waitingVcId = await guildHandler.getGuildWaitingVc(newState.guild.id)
+        const guildTextChannelId = await guildHandler.getGuildTextChannelId(newState.guild.id)
+        const waitingVcId = await guildHandler.getGuildWaitingVcId(newState.guild.id)
 
         // Check if the bot has permission to access channels and move members
-        if (guildPrivateVc == null || waitingVcId == null || guildTextChannelId == null) return
-        if (!await this.checkPermissions({ privateVcId: guildPrivateVc, waitingVcId, textChannelId: guildTextChannelId }, newState)) return
+        if (guildPrivateVcId == null || waitingVcId == null || guildTextChannelId == null) return
+        if (!await this.checkPermissions({ privateVcId: guildPrivateVcId, waitingVcId, textChannelId: guildTextChannelId }, newState)) return
 
         // Channel hasn't been set, return early
         if (guildTextChannelId == null || waitingVcId == null) return

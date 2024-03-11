@@ -18,17 +18,18 @@ const startSession = async (guildId: string): Promise<boolean> => {
   const guild = container.sessions.find((g) => g.guildId === guildId)
   if (guild == null) {
     // Fetch channels to store them in session
-    const guildWaitingVc = await guildHandler.getGuildWaitingVc(guildId)
-    const guildPrivateVc = await guildHandler.getGuildPrivateVc(guildId)
-    const guildTextChannel = await guildHandler.getGuildTextChannel(guildId)
+    const guildWaitingVcId = await guildHandler.getGuildWaitingVcId(guildId)
+    const guildPrivateVcId = await guildHandler.getGuildPrivateVcId(guildId)
+    const guildTextChannelId = await guildHandler.getGuildTextChannelId(guildId)
 
-    if (guildWaitingVc == null || guildPrivateVc == null || guildTextChannel == null) return false
+    // Check that all IDs are set
+    if (guildWaitingVcId == null || guildPrivateVcId == null || guildTextChannelId == null) return false
     const channels = {
-      privateVcId: guildPrivateVc,
-      waitingVcId: guildWaitingVc,
-      textChannelId: guildTextChannel
+      privateVcId: guildPrivateVcId,
+      waitingVcId: guildWaitingVcId,
+      textChannelId: guildTextChannelId
     }
-    // Guild doesn't have an active session, create it
+    // Start session
     container.sessions.push({ guildId, ignoredUsers: [], rememberedUsers: [], usersInCooldown: [], channels })
     return true
   }
