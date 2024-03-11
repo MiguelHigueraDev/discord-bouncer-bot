@@ -51,8 +51,7 @@ export class UsersVoiceStateUpdateListener extends Listener {
       const privateChannel = await newState.guild.channels.fetch(guildPrivateVc) as VoiceBasedChannel
       if (privateChannel == null) return
       if (privateChannel.members.size === 0) return
-      // Check if user is stored in remembered users for the session
-      // If stored, just move user to it
+      // Check if user is stored in remembered users for the session, if stored just move user to private channel
       if (voiceStoresManager.checkIfUserIsRemembered(user.id, guildId)) {
         return await user.voice.setChannel(guildPrivateVc)
       }
