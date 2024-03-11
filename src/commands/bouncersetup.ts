@@ -3,7 +3,7 @@ import { type ChatInputCommandInteraction, PermissionFlagsBits, type Interaction
 import guildHandler from '../lib/database/guildHandler'
 import { checkChannelPermissions } from '../lib/permissions/checkPermissions'
 
-export class BouncerSetup extends Command {
+export class BouncerSetupCommand extends Command {
   public constructor (context: Command.LoaderContext, options: Command.Options) {
     super(context, {
       ...options,
@@ -20,7 +20,7 @@ export class BouncerSetup extends Command {
         .setDMPermission(false)
         .setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers)
         .addSubcommand((command) =>
-          command.setName('show-channels').setDescription('Show the current channels.')
+          command.setName('show-status').setDescription('Show the bouncer\'s current status.')
         )
         .addSubcommand((command) =>
           command.setName('set-private-vc').setDescription('Set the voice channel that will be private.')
@@ -51,7 +51,17 @@ export class BouncerSetup extends Command {
                 .setRequired(true)
                 .addChannelTypes(ChannelType.GuildText)
             )
-        ), {
+        )
+        .addSubcommand((command) =>
+          command.setName('enable').setDescription('Enable the bouncer for this server.')
+        )
+        .addSubcommand((command) =>
+          command.setName('disable').setDescription('Disable the bouncer for this server.')
+        )
+        .addSubcommand((command) =>
+          command.setName('reset').setDescription('Resets all settings to their default values.')
+        )
+    , {
       idHints: ['1216082943433506887']
     })
   }
@@ -59,7 +69,7 @@ export class BouncerSetup extends Command {
   public async chatInputRun (interaction: ChatInputCommandInteraction): Promise<InteractionResponse<boolean>> {
     const subcommand = interaction.options.getSubcommand()
 
-    if (subcommand === 'show-channels') {
+    if (subcommand === 'show-status') {
       const embed = await this.makeChannelsEmbed(interaction.guild!.id)
       return await interaction.reply({ embeds: [embed], ephemeral: true })
     }
@@ -68,15 +78,15 @@ export class BouncerSetup extends Command {
     if (subcommand === 'set-private-vc' || subcommand === 'set-waiting-vc') {
       const channel = interaction.options.getChannel('voice-channel', true)
 
-      // First check if bot has permissions to connect to the channel and talk
-      const hasPermissions = await checkChannelPermissions(interaction.guild!.id, channel.id, ['Connect', 'Speak'])
+      // First check if bot has permissions to connect to the channel, speak, and move members
+      const hasPermissions = await checkChannelPermissions(interaction.guild!.id, channel.id, ['Connect', 'Speak', 'MoveMembers'])
       // Error checking permissions
       if (hasPermissions === false) {
         return await interaction.reply({ content: 'Error checking channel permissions.', ephemeral: true })
       }
       // Bot lacks one or multiple permissions
       if (hasPermissions !== true) {
-        return await interaction.reply({ content: 'I do not have permissions to connect to this channel.\nMissing permissions: `' + hasPermissions.join(', ') + '`', ephemeral: true })
+        return await interaction.reply({ content: 'I do not have permission(s) to perform this action.\nMissing permissions: `' + hasPermissions.join(', ') + '`', ephemeral: true })
       }
 
       // Voice channels
@@ -111,7 +121,7 @@ export class BouncerSetup extends Command {
       }
       // Bot lacks one or multiple permissions
       if (hasPermissions !== true) {
-        return await interaction.reply({ content: 'I do not have permissions to read and send messages to this channel.\nMissing permissions: `' + hasPermissions.join(', ') + '`', ephemeral: true })
+        return await interaction.reply({ content: 'I do not have permission(s) to perform this action.\nMissing permissions: `' + hasPermissions.join(', ') + '`', ephemeral: true })
       }
 
       const updated = await guildHandler.updateGuildTextChannel(interaction.guild!.id, channel.id)
@@ -119,6 +129,37 @@ export class BouncerSetup extends Command {
         return await interaction.reply({ content: 'Error updating the text channel.', ephemeral: true })
       } else {
         return await interaction.reply({ content: `The text channel has been updated to <#${channel.id}>.`, ephemeral: true })
+      }
+    }
+
+    if (subcommand === 'enable') {
+      // Check that all channels have been set up
+      if (!await guildHandler.checkAllChannelsAreSetUp(interaction.guild!.id)) {
+        return await interaction.reply({ content: 'All channels must be set up before enabling the bouncer.', ephemeral: true })
+      }
+      const updated = await guildHandler.toggleGuildBouncer(interaction.guild!.id, true)
+      if (!updated) {
+        return await interaction.reply({ content: 'Error updating the bouncer status.', ephemeral: true })
+      } else {
+        return await interaction.reply({ content: 'The bouncer has been enabled for this server.', ephemeral: true })
+      }
+    }
+
+    if (subcommand === 'disable') {
+      const updated = await guildHandler.toggleGuildBouncer(interaction.guild!.id, false)
+      if (!updated) {
+        return await interaction.reply({ content: 'Error updating the bouncer status.', ephemeral: true })
+      } else {
+        return await interaction.reply({ content: 'The bouncer has been disabled for this server.', ephemeral: true })
+      }
+    }
+
+    if (subcommand === 'reset') {
+      const updated = await guildHandler.resetGuildBouncer(interaction.guild!.id)
+      if (!updated) {
+        return await interaction.reply({ content: 'Error resetting the bouncer status.', ephemeral: true })
+      } else {
+        return await interaction.reply({ content: 'The bouncer settings has been reset for this server.', ephemeral: true })
       }
     }
 
@@ -131,13 +172,14 @@ export class BouncerSetup extends Command {
     const textChannelId = await guildHandler.getGuildTextChannel(guildId)
 
     const embed = new EmbedBuilder()
-      .setTitle('Channels')
+      .setTitle('Bouncer Status')
       .setColor('Blurple')
-      .setDescription('Set each channel using this command\'s subcommands.')
+      .setDescription('Channels:')
       .addFields(
-        { name: 'Private voice channel', value: `${privateVcId != null ? `<#${privateVcId}>` : 'Not set.'}` },
-        { name: 'Waiting room voice channel', value: `${waitingVcId != null ? `<#${waitingVcId}>` : 'Not set.'}` },
-        { name: 'Text channel', value: `${textChannelId != null ? `<#${textChannelId}>` : 'Not set.'}` }
+        { name: 'Private voice channel', value: `${privateVcId != null ? `<#${privateVcId}>` : 'Not set. /bouncerstatus set-private-vc'}` },
+        { name: 'Waiting room voice channel', value: `${waitingVcId != null ? `<#${waitingVcId}>` : 'Not set. /bouncerstatus set-waiting-vc'}` },
+        { name: 'Text channel', value: `${textChannelId != null ? `<#${textChannelId}>` : 'Not set. /bouncerstatus set-text-channel'}` },
+        { name: 'Status', value: `${await guildHandler.getGuildBouncerStatus(guildId) ? ':white_check_mark: Enabled' : ':x: Disabled'}` }
       )
 
     return embed
