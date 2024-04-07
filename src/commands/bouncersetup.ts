@@ -195,9 +195,9 @@ export class BouncerSetupCommand extends Command {
       .setColor('Blurple')
       .setDescription('Channels:')
       .addFields(
-        { name: 'Private voice channel', value: `${privateVcId != null ? `<#${privateVcId}>` : 'Set it using /bouncerstatus set-private-vc'}` },
-        { name: 'Waiting room voice channel', value: `${waitingVcId != null ? `<#${waitingVcId}>` : 'Set it using /bouncerstatus set-waiting-vc'}` },
-        { name: 'Text channel', value: `${textChannelId != null ? `<#${textChannelId}>` : 'Set it using /bouncerstatus set-text-channel'}` },
+        { name: 'Private voice channel', value: `${privateVcId != null ? `<#${privateVcId}>` : 'Set it using /bouncersetup set-private-vc'}` },
+        { name: 'Waiting room voice channel', value: `${waitingVcId != null ? `<#${waitingVcId}>` : 'Set it using /bouncersetup set-waiting-vc'}` },
+        { name: 'Text channel', value: `${textChannelId != null ? `<#${textChannelId}>` : 'Set it using /bouncersetup set-text-channel'}` },
         { name: 'Status', value: `${await guildHandler.getGuildBouncerStatus(guildId) ? ':white_check_mark: Enabled' : ':x: Disabled'}` }
       )
 
