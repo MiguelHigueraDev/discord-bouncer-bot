@@ -104,29 +104,14 @@ export class UsersVoiceStateUpdateListener extends Listener {
   /**
    * Create and return a new ActionRowBuilder with three buttons: move, remember, and ignore.
    *
+   * @param {boolean} isDisabled - whether the buttons should be disabled
    * @return {ActionRowBuilder<ButtonBuilder>} The newly created ActionRowBuilder with the three buttons.
    */
-  private makeButtons (): ActionRowBuilder<ButtonBuilder> {
+  private makeButtons (isDisabled: boolean = false): ActionRowBuilder<ButtonBuilder> {
     const row = new ActionRowBuilder<ButtonBuilder>()
-    const moveButton = new ButtonBuilder().setCustomId('moved').setStyle(ButtonStyle.Primary).setLabel('Move')
-    const rememberButton = new ButtonBuilder().setCustomId('remembered').setStyle(ButtonStyle.Success).setLabel('Move + remember')
-    const ignoreButton = new ButtonBuilder().setCustomId('ignored').setStyle(ButtonStyle.Danger).setLabel('Ignore for this session')
-
-    row.addComponents(moveButton, rememberButton, ignoreButton)
-    return row
-  }
-
-  /**
-   * Creates and returns a new action row with disabled buttons.
-   *
-   * @param None
-   * @return {ActionRowBuilder<ButtonBuilder>} The action row with disabled buttons
-   */
-  private makeDisabledButtons (): ActionRowBuilder<ButtonBuilder> {
-    const row = new ActionRowBuilder<ButtonBuilder>()
-    const moveButton = new ButtonBuilder().setCustomId('moved').setStyle(ButtonStyle.Primary).setLabel('Move').setDisabled(true)
-    const rememberButton = new ButtonBuilder().setCustomId('remembered').setStyle(ButtonStyle.Success).setLabel('Move + remember').setDisabled(true)
-    const ignoreButton = new ButtonBuilder().setCustomId('ignored').setStyle(ButtonStyle.Danger).setLabel('Ignore for this session').setDisabled(true)
+    const moveButton = new ButtonBuilder().setCustomId('moved').setStyle(ButtonStyle.Primary).setLabel('Move').setDisabled(isDisabled)
+    const rememberButton = new ButtonBuilder().setCustomId('remembered').setStyle(ButtonStyle.Success).setLabel('Move + remember').setDisabled(isDisabled)
+    const ignoreButton = new ButtonBuilder().setCustomId('ignored').setStyle(ButtonStyle.Danger).setLabel('Ignore for this session').setDisabled(isDisabled)
 
     row.addComponents(moveButton, rememberButton, ignoreButton)
     return row
@@ -179,7 +164,7 @@ export class UsersVoiceStateUpdateListener extends Listener {
     })
 
     collector.on('end', async () => {
-      await message.edit({ components: [this.makeDisabledButtons()] })
+      await message.edit({ components: [this.makeButtons(true)] })
     })
   }
 }
