@@ -26,7 +26,7 @@ export class StreamerVoiceUpdateListener extends Listener {
       // Check if this guild has the bouncer enabled
       if (!await this.checkIfGuildIsValid(newState.guild.id)) return
 
-      if (newState.channel!.members.size === 1) {
+      if (newState.channel!.members.size > 0) {
         const guildTextChannelId = await guildHandler.getGuildTextChannelId(newState.guild.id)
         const waitingVcId = await guildHandler.getGuildWaitingVcId(newState.guild.id)
 
@@ -68,10 +68,10 @@ export class StreamerVoiceUpdateListener extends Listener {
     if (privateVc == null || waitingVc == null || textChannel == null) return false
     if (privateVc.isVoiceBased() && waitingVc.isVoiceBased() && textChannel.isTextBased()) {
       // Check permissions for each
-      const checkPrivateVc = await checkChannelPermissions(state.guild.id, privateVcId, ['Connect', 'Speak', 'MoveMembers'])
-      const checkWaitingVc = await checkChannelPermissions(state.guild.id, waitingVcId, ['Connect', 'Speak', 'MoveMembers'])
-      const checkTextChannel = await checkChannelPermissions(state.guild.id, textChannelId, ['ViewChannel', 'SendMessages'])
-      return (checkPrivateVc === true && checkWaitingVc === true && checkTextChannel === true)
+      const hasPrivateVcPermission = await checkChannelPermissions(state.guild.id, privateVcId, ['Connect', 'Speak', 'MoveMembers'])
+      const hasWaitingVcPermission = await checkChannelPermissions(state.guild.id, waitingVcId, ['Connect', 'Speak', 'MoveMembers'])
+      const hasTextChannelPermission = await checkChannelPermissions(state.guild.id, textChannelId, ['ViewChannel', 'SendMessages'])
+      return (hasPrivateVcPermission === true && hasWaitingVcPermission === true && hasTextChannelPermission === true)
     }
     return false
   }
