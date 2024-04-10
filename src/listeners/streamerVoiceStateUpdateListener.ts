@@ -30,15 +30,13 @@ export class StreamerVoiceUpdateListener extends Listener {
         const guildTextChannelId = await guildHandler.getGuildTextChannelId(newState.guild.id)
         const waitingVcId = await guildHandler.getGuildWaitingVcId(newState.guild.id)
 
-        // Check if the bot has permission to access channels and move members
+        // Check if channels are set and if the bot has permission to access channels and move members
         if (guildPrivateVcId == null || waitingVcId == null || guildTextChannelId == null) return
         if (!await this.checkPermissions({ privateVcId: guildPrivateVcId, waitingVcId, textChannelId: guildTextChannelId }, newState)) return
 
-        // Channel hasn't been set, return early
-        if (guildTextChannelId == null || waitingVcId == null) return
         const guildTextChannel = await newState.guild.channels.fetch(guildTextChannelId)
-
         if (guildTextChannel == null) return
+
         if (guildTextChannel.isTextBased()) {
           // Start session
           const sessionStarted = await sessionManager.startSession(newState.guild.id)

@@ -1,5 +1,6 @@
 import { AudioPlayerStatus, createAudioPlayer, createAudioResource, getVoiceConnection, joinVoiceChannel } from '@discordjs/voice'
 import { type VoiceBasedChannel } from 'discord.js'
+import path from 'path'
 const connectToVoiceChannel = async (channel: VoiceBasedChannel): Promise<void> => {
   try {
     joinVoiceChannel({
@@ -21,7 +22,9 @@ const playAudio = async (guildId: string): Promise<void> => {
 
     const player = createAudioPlayer()
     connection.subscribe(player)
-    const resource = createAudioResource('/home/misfit/repos/discord-bouncer/src/dist/assets/bell.mp3')
+
+    const basePath = path.resolve(__dirname, '../../../assets')
+    const resource = createAudioResource(path.join(basePath, '/bell.mp3'))
     player.play(resource)
 
     // Disconnect after playing
