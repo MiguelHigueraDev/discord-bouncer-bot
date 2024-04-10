@@ -3,11 +3,13 @@
  * It sends notifications and moves members automatically
  */
 import { Listener } from '@sapphire/framework'
-import { ActionRowBuilder, ButtonBuilder, ButtonStyle, ComponentType, EmbedBuilder, type VoiceBasedChannel, type GuildMember, type Message, type TextBasedChannel, type VoiceState } from 'discord.js'
+import { ActionRowBuilder, ButtonBuilder, ButtonStyle, ComponentType, EmbedBuilder, type VoiceBasedChannel, type GuildMember, type Message, type TextBasedChannel, type VoiceState, type User } from 'discord.js'
 import { type GuildChannels } from '../lib/interfaces/GuildChannels'
 import voiceStoresManager from '../lib/helpers/voiceStoresManager'
 import sessionManager from '../lib/helpers/sessionManager'
 import audioManager from '../lib/audio/audioManager'
+
+type ActionType = 'moved' | 'remembered' | 'ignored'
 
 export class UsersVoiceStateUpdateListener extends Listener {
   public constructor (context: Listener.LoaderContext, options: Listener.Options) {
@@ -81,15 +83,34 @@ export class UsersVoiceStateUpdateListener extends Listener {
   }
 
   /**
+   * Creates and returns an updated EmbedBuilder for a join request.
+   * This includes the action performed on the member and the person who performed it
+   *
+   * @param {User} user - the user
+   * @param {ActionType} action - the action taken on the user
+   * @param {User} executor - the user who performed the action
+   * @return {EmbedBuilder} the embed builder for the join request with the action taken and the user responsible for it
+   */
+  private makeUpdatedEmbed (user: User, action: ActionType, executor: User): EmbedBuilder {
+    const embed = new EmbedBuilder()
+      .setColor('Blurple')
+      .setTitle('Join Request')
+      .setDescription(`<@${user.id}> was ${action} by <@${executor.id}>.`)
+      .setThumbnail(user.displayAvatarURL())
+      .setFooter({ text: `Requested by ${user.username}` })
+    return embed
+  }
+
+  /**
    * Create and return a new ActionRowBuilder with three buttons: move, remember, and ignore.
    *
    * @return {ActionRowBuilder<ButtonBuilder>} The newly created ActionRowBuilder with the three buttons.
    */
   private makeButtons (): ActionRowBuilder<ButtonBuilder> {
     const row = new ActionRowBuilder<ButtonBuilder>()
-    const moveButton = new ButtonBuilder().setCustomId('move').setStyle(ButtonStyle.Primary).setLabel('Move')
-    const rememberButton = new ButtonBuilder().setCustomId('remember').setStyle(ButtonStyle.Success).setLabel('Move + remember')
-    const ignoreButton = new ButtonBuilder().setCustomId('ignore').setStyle(ButtonStyle.Danger).setLabel('Ignore for this session')
+    const moveButton = new ButtonBuilder().setCustomId('moved').setStyle(ButtonStyle.Primary).setLabel('Move')
+    const rememberButton = new ButtonBuilder().setCustomId('remembered').setStyle(ButtonStyle.Success).setLabel('Move + remember')
+    const ignoreButton = new ButtonBuilder().setCustomId('ignored').setStyle(ButtonStyle.Danger).setLabel('Ignore for this session')
 
     row.addComponents(moveButton, rememberButton, ignoreButton)
     return row
@@ -103,9 +124,9 @@ export class UsersVoiceStateUpdateListener extends Listener {
    */
   private makeDisabledButtons (): ActionRowBuilder<ButtonBuilder> {
     const row = new ActionRowBuilder<ButtonBuilder>()
-    const moveButton = new ButtonBuilder().setCustomId('move').setStyle(ButtonStyle.Primary).setLabel('Move').setDisabled(true)
-    const rememberButton = new ButtonBuilder().setCustomId('remember').setStyle(ButtonStyle.Success).setLabel('Move + remember').setDisabled(true)
-    const ignoreButton = new ButtonBuilder().setCustomId('ignore').setStyle(ButtonStyle.Danger).setLabel('Ignore for this session').setDisabled(true)
+    const moveButton = new ButtonBuilder().setCustomId('moved').setStyle(ButtonStyle.Primary).setLabel('Move').setDisabled(true)
+    const rememberButton = new ButtonBuilder().setCustomId('remembered').setStyle(ButtonStyle.Success).setLabel('Move + remember').setDisabled(true)
+    const ignoreButton = new ButtonBuilder().setCustomId('ignored').setStyle(ButtonStyle.Danger).setLabel('Ignore for this session').setDisabled(true)
 
     row.addComponents(moveButton, rememberButton, ignoreButton)
     return row
@@ -133,22 +154,25 @@ export class UsersVoiceStateUpdateListener extends Listener {
     collector.on('collect', async (interaction) => {
       collector.stop()
       try {
-        if (interaction.customId === 'move') {
+        if (interaction.customId === 'moved') {
           // Clear cooldown for user and move it to the channel
           voiceStoresManager.clearCooldown(user.id, user.guild.id)
           await user.voice.setChannel(guildChannels.privateVcId)
           await interaction.reply({ content: 'User moved to private VC.', ephemeral: true })
-        } else if (interaction.customId === 'remember') {
+        } else if (interaction.customId === 'remembered') {
           // Set user as remembered, clear cooldown and move them to the channel
           voiceStoresManager.setRememberedUser(user.id, user.guild.id)
           voiceStoresManager.clearCooldown(user.id, user.guild.id)
           await user.voice.setChannel(guildChannels.privateVcId)
           await interaction.reply({ content: 'User moved to private VC and remembered for current session.', ephemeral: true })
-        } else if (interaction.customId === 'ignore') {
+        } else if (interaction.customId === 'ignored') {
           // Ignore user for current session
           voiceStoresManager.setIgnoredUser(user.id, user.guild.id)
           await interaction.reply({ content: 'User ignored for current session.', ephemeral: true })
         }
+        // Update embed with action taken and executor
+        const updatedEmbed = this.makeUpdatedEmbed(user.user, interaction.customId as ActionType, interaction.user)
+        await message.edit({ embeds: [updatedEmbed] })
       } catch (error) {
         await interaction.reply({ content: 'Error moving user to private VC. If they haven\'t left the VC, check that I have permissions to connect to the VC and to move members.', ephemeral: true })
       }
