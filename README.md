@@ -1,6 +1,6 @@
 # Bouncer Bot (discord-bouncer-bot)
 
-A Discord bot that helps you move people to a designated private channel.
+A Discord bot that helps you move people to a specified private channel.
 
 Made especially for streamers that have a Streaming VC and not want anyone to join it and talk, but it can be used for any purpose.
 
