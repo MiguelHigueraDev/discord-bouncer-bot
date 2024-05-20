@@ -8,14 +8,15 @@ import guildHandler from '../database/guildHandler'
 import { type Session } from '../interfaces/Session'
 
 /**
- * Start a new session for the specified guild.
+ * Start a new session for the specified guild and channel.
  *
  * @param {string} guildId - The ID of the guild for which to start the session
+ * @param {string} channelId - The ID of the channel to start the session in
  * @return {Promise<boolean>} A boolean indicating whether the session was successfully started
  */
-const startSession = async (guildId: string): Promise<boolean> => {
+const startSession = async (guildId: string, channelId: string): Promise<boolean> => {
   // Check if guild is already stored
-  const guild = container.sessions.find((g) => g.guildId === guildId)
+  const guild = container.sessions.find((g) => g.guildId === guildId && g.channelId === channelId)
   if (guild == null) {
     // Fetch channels to store them in session
     const guildWaitingVcId = await guildHandler.getGuildWaitingVcId(guildId)
@@ -30,7 +31,7 @@ const startSession = async (guildId: string): Promise<boolean> => {
       textChannelId: guildTextChannelId
     }
     // Start session
-    container.sessions.push({ guildId, ignoredUsers: [], rememberedUsers: [], usersInCooldown: [], channels })
+    container.sessions.push({ guildId, channelId, ignoredUsers: [], rememberedUsers: [], usersInCooldown: [], channels })
     return true
   }
   return false

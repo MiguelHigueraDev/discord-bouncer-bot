@@ -5,6 +5,7 @@ import { type GuildChannels } from './GuildChannels'
 
 export interface Session {
   guildId: Snowflake
+  channelId: Snowflake
   usersInCooldown: CooldownUser[]
   ignoredUsers: User[]
   rememberedUsers: User[]

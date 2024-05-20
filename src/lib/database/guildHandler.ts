@@ -1,7 +1,7 @@
 import { container } from '@sapphire/framework'
 
 /**
- * Updates the status of a guild.
+ * Updates the status of a guild in the database (bot enabled or disabled)
  * If the guild doesn't exist, creates a new record for the guild.
  * If the guild exists, updates the guild name.
  *
