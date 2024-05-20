@@ -17,10 +17,9 @@ model Guild {
   id            String      @id
   name          String?     @db.VarChar(255)
   enabled       Boolean     @default(false)
-  privateVcId   String?     @db.VarChar(255)
-  waitingVcId   String?     @db.VarChar(255)
   textChannelId String?     @db.VarChar(255)
   users         GuildUser[]
+  channels GuildChannel[]
 }
 
 model User {
@@ -38,4 +37,12 @@ model GuildUser {
   blocklisted Boolean
 
   @@id([userId, guildId])
+}
+
+model GuildChannel{
+  id BigInt @id
+  guild Guild @relation(fields: [guildId], references: [id])
+  guildId String
+  privateVcId String @db.VarChar(255)
+  waitingVcId String @db.VarChar(255)
 }
