@@ -14,12 +14,13 @@ datasource db {
 }
 
 model Guild {
-  id            String      @id
-  name          String?     @db.VarChar(255)
-  enabled       Boolean     @default(false)
-  textChannelId String?     @db.VarChar(255)
-  users         GuildUser[]
-  channels GuildChannel[]
+  id              String                @id
+  name            String?               @db.VarChar(255)
+  enabled         Boolean               @default(false)
+  textChannelId   String?               @db.VarChar(255)
+  waitingVcId     String?               @db.VarChar(255)
+  users           GuildUser[]
+  privateChannels GuildPrivateChannel[]
 }
 
 model User {
@@ -39,10 +40,9 @@ model GuildUser {
   @@id([userId, guildId])
 }
 
-model GuildChannel{
-  id BigInt @id
-  guild Guild @relation(fields: [guildId], references: [id])
-  guildId String
+model GuildPrivateChannel {
+  id          BigInt @id @default(autoincrement())
+  guild       Guild  @relation(fields: [guildId], references: [id])
+  guildId     String
   privateVcId String @db.VarChar(255)
-  waitingVcId String @db.VarChar(255)
 }
