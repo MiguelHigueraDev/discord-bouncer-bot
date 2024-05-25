@@ -39,7 +39,7 @@ export class StreamerVoiceUpdateListener extends Listener {
 
         if (guildTextChannel.isTextBased()) {
           // Start session
-          const sessionStarted = await sessionManager.startSession(newState.guild.id)
+          const sessionStarted = await sessionManager.startSession(newState.guild.id, guildPrivateVcId)
           if (!sessionStarted) return
           const embed = this.makeEmbed(waitingVcId)
           await guildTextChannel.send({ embeds: [embed] })
