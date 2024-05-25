@@ -8,14 +8,14 @@
 import { container } from '@sapphire/framework'
 
 /**
- * Set the cooldown for a user in a specific guild's session.
- *
- * @param {string} userId - The ID of the user
- * @param {string} guildId - The ID of the guild
+ * Sets a cooldown for a user in a specific guild and private voice channel.
+ * @param userId - The ID of the user.
+ * @param guildId - The ID of the guild.
+ * @param privateVcId - The ID of the private voice channel.
  */
-const setCooldown = (userId: string, guildId: string) => {
-  // Check if session is already stored
-  const session = container.sessions.find((s) => s.guildId === guildId)
+const setCooldown = (userId: string, guildId: string, privateVcId: string) => {
+  // Check if guild exists
+  const session = getGuildSession(privateVcId, guildId)
   if (session == null) return
 
   const user = session.usersInCooldown.find((u) => u.id === userId)
@@ -27,14 +27,13 @@ const setCooldown = (userId: string, guildId: string) => {
 }
 
 /**
- * Clears the cooldown for a specific user in a guild session.
- *
- * @param {string} userId - The ID of the user whose cooldown is being cleared
- * @param {string} guildId - The ID of the guild session
+ * Clears the cooldown for a specific user in a guild's session.
+ * @param {string} userId - The ID of the user.
+ * @param {string} guildId - The ID of the guild.
+ * @param {string} privateVcId - The ID of the private voice channel.
  */
-const clearCooldown = (userId: string, guildId: string) => {
-  // Check if session is already stored
-  const session = container.sessions.find((s) => s.guildId === guildId)
+const clearCooldown = (userId: string, guildId: string, privateVcId: string) => {
+  const session = getGuildSession(privateVcId, guildId)
   if (session == null) return
 
   const user = session.usersInCooldown.find((u) => u.id === userId)
@@ -43,14 +42,14 @@ const clearCooldown = (userId: string, guildId: string) => {
 }
 
 /**
- * Check if the user is in cooldown for the specified guild.
- *
- * @param {string} userId - The ID of the user to check.
- * @param {string} guildId - The ID of the guild to check.
- * @return {boolean} Returns true if the user is in cooldown, otherwise false.
+ * Checks if a user is in cooldown for joining a private voice channel.
+ * @param userId - The ID of the user.
+ * @param guildId - The ID of the guild.
+ * @param privateVcId - The ID of the private voice channel.
+ * @returns A boolean indicating whether the user is in cooldown.
  */
-const checkIfUserIsInCooldown = (userId: string, guildId: string): boolean => {
-  const session = container.sessions.find((s) => s.guildId === guildId)
+const checkIfUserIsInCooldown = (userId: string, guildId: string, privateVcId: string): boolean => {
+  const session = getGuildSession(privateVcId, guildId)
   if (session == null) return false
 
   if (session.usersInCooldown.length === 0) return false
@@ -65,14 +64,13 @@ const checkIfUserIsInCooldown = (userId: string, guildId: string): boolean => {
 }
 
 /**
- * Sets the remembered user for a specific guild, if not already stored in the session.
- *
- * @param {string} userId - The ID of the user to be remembered.
- * @param {string} guildId - The ID of the guild for which the user is to be remembered.
+ * Sets a user as remembered in a session.
+ * @param userId - The ID of the user to be remembered.
+ * @param guildId - The ID of the guild where the session belongs.
+ * @param privateVcId - The ID of the private voice channel associated with the session.
  */
-const setRememberedUser = (userId: string, guildId: string) => {
-  // Check if session is already stored
-  const session = container.sessions.find((s) => s.guildId === guildId)
+const setRememberedUser = (userId: string, guildId: string, privateVcId: string) => {
+  const session = getGuildSession(privateVcId, guildId)
   if (session == null) return
 
   const user = session.rememberedUsers.find((u) => u.id === userId)
@@ -82,14 +80,14 @@ const setRememberedUser = (userId: string, guildId: string) => {
 }
 
 /**
- * Check if the user is remembered in the session for the given guild.
- *
- * @param {string} userId - The ID of the user to check.
- * @param {string} guildId - The ID of the guild to check.
- * @return {boolean} Whether the user is remembered in the session for the given guild.
+ * Checks if a user is remembered in a specific guild's session for a private voice channel.
+ * @param userId - The ID of the user to check.
+ * @param guildId - The ID of the guild.
+ * @param privateVcId - The ID of the private voice channel.
+ * @returns A boolean indicating whether the user is remembered or not.
  */
-const checkIfUserIsRemembered = (userId: string, guildId: string): boolean => {
-  const session = container.sessions.find((s) => s.guildId === guildId)
+const checkIfUserIsRemembered = (userId: string, guildId: string, privateVcId: string): boolean => {
+  const session = getGuildSession(privateVcId, guildId)
   if (session == null) return false
 
   const rememberedUsers = session.rememberedUsers
@@ -101,14 +99,16 @@ const checkIfUserIsRemembered = (userId: string, guildId: string): boolean => {
 }
 
 /**
- * Sets the provided user as an ignored user for the specified guild if not already ignored.
+ * Sets an ignored user for a specific guild and private voice channel.
+ * If the guild or session does not exist, the function returns early.
+ * If the user is not already ignored, it will be added to the ignored users list.
  *
- * @param {string} userId - The ID of the user to be ignored
- * @param {string} guildId - The ID of the guild where the user is to be ignored
+ * @param userId - The ID of the user to be ignored.
+ * @param guildId - The ID of the guild.
+ * @param privateVcId - The ID of the private voice channel.
  */
-const setIgnoredUser = (userId: string, guildId: string) => {
-  // Check if session is already stored
-  const session = container.sessions.find((s) => s.guildId === guildId)
+const setIgnoredUser = (userId: string, guildId: string, privateVcId: string) => {
+  const session = getGuildSession(privateVcId, guildId)
   if (session == null) return
 
   const user = session.ignoredUsers.find((u) => u.id === userId)
@@ -118,14 +118,14 @@ const setIgnoredUser = (userId: string, guildId: string) => {
 }
 
 /**
- * Checks if the user is ignored in the specified guild.
- *
- * @param {string} userId - The ID of the user to check.
- * @param {string} guildId - The ID of the guild to check in.
- * @return {boolean} Whether the user is ignored in the guild.
+ * Checks if a user is ignored in a specific private voice channel session.
+ * @param userId - The ID of the user to check.
+ * @param guildId - The ID of the guild where the private voice channel session belongs.
+ * @param privateVcId - The ID of the private voice channel session to check.
+ * @returns A boolean indicating whether the user is ignored or not.
  */
-const checkIfUserIsIgnored = (userId: string, guildId: string): boolean => {
-  const session = container.sessions.find((s) => s.guildId === guildId)
+const checkIfUserIsIgnored = (userId: string, guildId: string, privateVcId: string): boolean => {
+  const session = getGuildSession(privateVcId, guildId)
   if (session == null) return false
 
   const ignoredUsers = session.ignoredUsers
@@ -134,6 +134,18 @@ const checkIfUserIsIgnored = (userId: string, guildId: string): boolean => {
   const user = session.ignoredUsers.find((u) => u.id === userId)
   if (user == null) return false
   return true
+}
+
+/**
+ * Retrieves the session associated with a private voice channel in a guild.
+ * @param privateVcId The ID of the private voice channel.
+ * @param guildId The ID of the guild.
+ * @returns The session associated with the private voice channel, or undefined if not found.
+ */
+const getGuildSession = (privateVcId: string, guildId: string) => {
+  const guild = container.guilds.find((g) => g.id === guildId)
+  if (guild == null) return
+  return guild.sessions.find((s) => s.privateVcId === privateVcId)
 }
 
 const voiceStoresManager = {
