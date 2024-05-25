@@ -82,35 +82,6 @@ const getGuildBouncerStatus = async (guildId: string): Promise<boolean> => {
 }
 
 /**
- * Updates the private voice channel for a specific guild.
- *
- * @param {string} guildId - The ID of the guild
- * @param {string} privateVcId - The ID of the private voice channel
- * @return {Promise<boolean>} A boolean indicating whether the update was successful
- */
-const updateGuildPrivateVcId = async (guildId: string, privateVcId: string): Promise<boolean> => {
-  try {
-    const updatedGuild = await updateGuildStatus(guildId)
-    if (!updatedGuild) {
-      return false
-    }
-
-    await container.db.guild.update({
-      where: {
-        id: guildId
-      },
-      data: {
-        privateVcId
-      }
-    })
-    return true
-  } catch (error) {
-    console.error('An error has ocurred while running guildHandler:updateGuildPrivateVc', error)
-    return false
-  }
-}
-
-/**
  * Updates the waiting voice channel for a guild and returns a boolean indicating success.
  *
  * @param {string} guildId - The ID of the guild
