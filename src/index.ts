@@ -2,7 +2,7 @@ import { PrismaClient } from '@prisma/client'
 import { SapphireClient, container } from '@sapphire/framework'
 import { ActivityType, GatewayIntentBits } from 'discord.js'
 import { config } from 'dotenv'
-import { type Session } from './lib/interfaces/Session'
+import { type Guild } from './lib/interfaces/Guild'
 config()
 
 // Database init
@@ -11,12 +11,12 @@ const prisma = new PrismaClient()
 declare module '@sapphire/pieces' {
   interface Container {
     db: PrismaClient
-    sessions: Session[]
+    guilds: Guild[]
   }
 }
 
 container.db = prisma
-container.sessions = []
+container.guilds = []
 
 const token = process.env.BOT_TOKEN
 

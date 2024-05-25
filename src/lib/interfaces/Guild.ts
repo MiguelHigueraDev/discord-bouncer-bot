@@ -1,7 +1,9 @@
 import { type Snowflake } from 'discord.js'
-import { type User } from './User'
+import { type Session } from './Session'
 
 export interface Guild {
   id: Snowflake
-  users: User[]
+  sessions: Session[]
+  waitingVcId: Snowflake
+  textChannelId: Snowflake
 }
