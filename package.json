@@ -4,7 +4,9 @@
   "description": "A discord \"bouncer\" to manage access to a private voice channel.",
   "main": "index.ts",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc",
+    "lint": "eslint . --ext .ts --fix"
   },
   "keywords": [
     "discord-bot",
@@ -15,8 +17,8 @@
   "author": "MiguelHigueraDev",
   "license": "MIT",
   "dependencies": {
-    "@discordjs/opus": "^0.9.0",
-    "@discordjs/voice": "^0.16.1",
+    "@discordjs/opus": "^0.10.0",
+    "@discordjs/voice": "^0.18.0",
     "@prisma/client": "5.10.2",
     "@sapphire/framework": "^5.0.7",
     "date-fns": "^3.3.1",
