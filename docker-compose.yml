@@ -1,0 +1,37 @@
+services:
+  app:
+    build: .
+    depends_on:
+      - db
+    env_file:
+      - ./src/.env
+    environment:
+      - DATABASE_URL=mysql://user:password@db:3306/bouncer_bot
+      - NODE_ENV=production
+    volumes:
+      - ./assets:/app/assets
+    restart: unless-stopped
+    networks:
+      - bot-network
+
+  db:
+    image: mysql:8.0
+    environment:
+      - MYSQL_DATABASE=bouncer_bot
+      - MYSQL_USER=user
+      - MYSQL_PASSWORD=password
+      - MYSQL_ROOT_PASSWORD=rootpassword
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    restart: unless-stopped
+    networks:
+      - bot-network
+
+volumes:
+  mysql_data:
+
+networks:
+  bot-network:
+    driver: bridge
