@@ -1,5 +1,5 @@
 import { Command } from '@sapphire/framework'
-import { type ChatInputCommandInteraction, PermissionFlagsBits, ChannelType, EmbedBuilder } from 'discord.js'
+import { type ChatInputCommandInteraction, PermissionFlagsBits, ChannelType, EmbedBuilder, InteractionContextType, MessageFlags } from 'discord.js'
 import guildHandler from '../lib/database/guildHandler'
 import { checkChannelPermissions } from '../lib/permissions/checkPermissions'
 
@@ -17,7 +17,7 @@ export class BouncerSetupCommand extends Command {
       builder
         .setName(this.name)
         .setDescription(this.description)
-        .setDMPermission(false)
+        .setContexts(InteractionContextType.Guild)
         .setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers)
         .addSubcommand((command) =>
           command.setName('show-status').setDescription('Show the bouncer\'s current status.')
@@ -61,17 +61,16 @@ export class BouncerSetupCommand extends Command {
         .addSubcommand((command) =>
           command.setName('reset').setDescription('Resets all settings to their default values.')
         )
-    , {
-      idHints: ['1216082943433506887']
-    })
+    )
   }
 
   public async chatInputRun (interaction: ChatInputCommandInteraction) {
+    console.log('running bouncersetup command')
     const subcommand = interaction.options.getSubcommand()
 
     if (subcommand === 'show-status') {
       const embed = await this.makeChannelsEmbed(interaction.guild!.id)
-      return await interaction.reply({ embeds: [embed], ephemeral: true })
+      return await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral })
     }
 
     // Voice channels
@@ -105,11 +104,11 @@ export class BouncerSetupCommand extends Command {
     const hasPermissions = await checkChannelPermissions(interaction.guild!.id, channel.id, ['Connect', 'Speak', 'MoveMembers'])
     // Error checking permissions
     if (hasPermissions === false) {
-      await interaction.reply({ content: 'Error checking channel permissions.', ephemeral: true })
+      await interaction.reply({ content: 'Error checking channel permissions.', flags: MessageFlags.Ephemeral })
     }
     // Bot lacks one or multiple permissions
     if (Array.isArray(hasPermissions) && hasPermissions.length > 0) {
-      await interaction.reply({ content: 'I do not have permission(s) to perform this action.\nMissing permissions: `' + hasPermissions.join(', ') + '`', ephemeral: true })
+      await interaction.reply({ content: 'I do not have permission(s) to perform this action.\nMissing permissions: `' + hasPermissions.join(', ') + '`', flags: MessageFlags.Ephemeral })
     }
 
     // Voice channels
@@ -117,17 +116,17 @@ export class BouncerSetupCommand extends Command {
       const updated = await guildHandler.updateGuildPrivateVcId(interaction.guild!.id, channel.id)
 
       if (!updated) {
-        await interaction.reply({ content: 'Error updating the private voice channel.', ephemeral: true })
+        await interaction.reply({ content: 'Error updating the private voice channel.', flags: MessageFlags.Ephemeral })
       } else {
-        await interaction.reply({ content: `The private channel has been updated to <#${channel.id}>.`, ephemeral: true })
+        await interaction.reply({ content: `The private channel has been updated to <#${channel.id}>.`, flags: MessageFlags.Ephemeral })
       }
     } else {
       const updated = await guildHandler.updateGuildWaitingVcId(interaction.guild!.id, channel.id)
 
       if (!updated) {
-        await interaction.reply({ content: 'Error updating the waiting room voice channel.', ephemeral: true })
+        await interaction.reply({ content: 'Error updating the waiting room voice channel.', flags: MessageFlags.Ephemeral })
       } else {
-        await interaction.reply({ content: `The waiting room channel has been updated to <#${channel.id}>.`, ephemeral: true })
+        await interaction.reply({ content: `The waiting room channel has been updated to <#${channel.id}>.`, flags: MessageFlags.Ephemeral })
       }
     }
   }
@@ -139,49 +138,49 @@ export class BouncerSetupCommand extends Command {
     const hasPermissions = await checkChannelPermissions(interaction.guild!.id, channel.id, ['ViewChannel', 'SendMessages'])
     // Error checking permissions
     if (hasPermissions === false) {
-      await interaction.reply({ content: 'Error checking channel permissions.', ephemeral: true })
+      await interaction.reply({ content: 'Error checking channel permissions.', flags: MessageFlags.Ephemeral })
     }
     // Bot lacks one or multiple permissions
     if (Array.isArray(hasPermissions) && hasPermissions.length > 0) {
-      await interaction.reply({ content: 'I do not have permission(s) to perform this action.\nMissing permissions: `' + hasPermissions.join(', ') + '`', ephemeral: true })
+      await interaction.reply({ content: 'I do not have permission(s) to perform this action.\nMissing permissions: `' + hasPermissions.join(', ') + '`', flags: MessageFlags.Ephemeral })
     }
 
     const updated = await guildHandler.updateGuildTextChannelId(interaction.guild!.id, channel.id)
     if (!updated) {
-      await interaction.reply({ content: 'Error updating the text channel.', ephemeral: true })
+      await interaction.reply({ content: 'Error updating the text channel.', flags: MessageFlags.Ephemeral })
     } else {
-      await interaction.reply({ content: `The text channel has been updated to <#${channel.id}>.`, ephemeral: true })
+      await interaction.reply({ content: `The text channel has been updated to <#${channel.id}>.`, flags: MessageFlags.Ephemeral })
     }
   }
 
   private readonly enableBouncer = async (guildId: string, interaction: ChatInputCommandInteraction): Promise<void> => {
     // Check that all channels have been set up
     if (!await guildHandler.checkAllChannelsAreSetUp(guildId)) {
-      await interaction.reply({ content: 'All channels must be set up before enabling the bouncer.', ephemeral: true })
+      await interaction.reply({ content: 'All channels must be set up before enabling the bouncer.', flags: MessageFlags.Ephemeral })
     }
     const updated = await guildHandler.toggleGuildBouncer(guildId, true)
     if (!updated) {
-      await interaction.reply({ content: 'Error updating the bouncer status.', ephemeral: true })
+      await interaction.reply({ content: 'Error updating the bouncer status.', flags: MessageFlags.Ephemeral })
     } else {
-      await interaction.reply({ content: 'The bouncer has been enabled for this server.', ephemeral: true })
+      await interaction.reply({ content: 'The bouncer has been enabled for this server.', flags: MessageFlags.Ephemeral })
     }
   }
 
   private readonly disableBouncer = async (guildId: string, interaction: ChatInputCommandInteraction): Promise<void> => {
     const updated = await guildHandler.toggleGuildBouncer(guildId, false)
     if (!updated) {
-      await interaction.reply({ content: 'Error updating the bouncer status.', ephemeral: true })
+      await interaction.reply({ content: 'Error updating the bouncer status.', flags: MessageFlags.Ephemeral })
     } else {
-      await interaction.reply({ content: 'The bouncer has been disabled for this server.', ephemeral: true })
+      await interaction.reply({ content: 'The bouncer has been disabled for this server.', flags: MessageFlags.Ephemeral })
     }
   }
 
   private readonly resetBouncer = async (guildId: string, interaction: ChatInputCommandInteraction): Promise<void> => {
     const updated = await guildHandler.resetGuildBouncer(guildId)
     if (!updated) {
-      await interaction.reply({ content: 'Error resetting the bouncer status.', ephemeral: true })
+      await interaction.reply({ content: 'Error resetting the bouncer status.', flags: MessageFlags.Ephemeral })
     } else {
-      await interaction.reply({ content: 'The bouncer has been reset for this server.', ephemeral: true })
+      await interaction.reply({ content: 'The bouncer has been reset for this server.', flags: MessageFlags.Ephemeral })
     }
   }
 

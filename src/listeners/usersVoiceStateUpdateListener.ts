@@ -3,7 +3,7 @@
  * It sends notifications and moves members automatically
  */
 import { Listener } from '@sapphire/framework'
-import { ActionRowBuilder, ButtonBuilder, ButtonStyle, ComponentType, EmbedBuilder, type VoiceBasedChannel, type GuildMember, type Message, type VoiceState, type User, type GuildTextBasedChannel } from 'discord.js'
+import { ActionRowBuilder, ButtonBuilder, ButtonStyle, ComponentType, EmbedBuilder, type VoiceBasedChannel, type GuildMember, type Message, type VoiceState, type User, type GuildTextBasedChannel, MessageFlags } from 'discord.js'
 import { type GuildChannels } from '../lib/interfaces/GuildChannels'
 import voiceStoresManager from '../lib/helpers/voiceStoresManager'
 import sessionManager from '../lib/helpers/sessionManager'
@@ -144,23 +144,23 @@ export class UsersVoiceStateUpdateListener extends Listener {
           // Clear cooldown for user and move it to the channel
           voiceStoresManager.clearCooldown(user.id, user.guild.id)
           await user.voice.setChannel(guildChannels.privateVcId)
-          await interaction.reply({ content: 'User moved to private VC.', ephemeral: true })
+          await interaction.reply({ content: 'User moved to private VC.', flags: MessageFlags.Ephemeral })
         } else if (interaction.customId === 'remembered') {
           // Set user as remembered, clear cooldown and move them to the channel
           voiceStoresManager.setRememberedUser(user.id, user.guild.id)
           voiceStoresManager.clearCooldown(user.id, user.guild.id)
           await user.voice.setChannel(guildChannels.privateVcId)
-          await interaction.reply({ content: 'User moved to private VC and remembered for current session.', ephemeral: true })
+          await interaction.reply({ content: 'User moved to private VC and remembered for current session.', flags: MessageFlags.Ephemeral })
         } else if (interaction.customId === 'ignored') {
           // Ignore user for current session
           voiceStoresManager.setIgnoredUser(user.id, user.guild.id)
-          await interaction.reply({ content: 'User ignored for current session.', ephemeral: true })
+          await interaction.reply({ content: 'User ignored for current session.', flags: MessageFlags.Ephemeral })
         }
         // Update embed with action taken and executor
         const updatedEmbed = this.makeUpdatedEmbed(user.user, interaction.customId as ActionType, interaction.user)
         await message.edit({ embeds: [updatedEmbed] })
       } catch (error) {
-        await interaction.reply({ content: 'Error moving user to private VC. If they haven\'t left the VC, check that I have permissions to connect to the VC and to move members.', ephemeral: true })
+        await interaction.reply({ content: 'Error moving user to private VC. If they haven\'t left the VC, check that I have permissions to connect to the VC and to move members.', flags: MessageFlags.Ephemeral })
       }
     })
 
