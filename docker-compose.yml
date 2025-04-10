@@ -2,7 +2,8 @@ services:
   app:
     build: .
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     env_file:
       - ./src/.env
     environment:
@@ -16,6 +17,12 @@ services:
 
   db:
     image: mysql:8.0
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "user", "-ppassword"]
+      interval: 4s
+      timeout: 4s
+      retries: 5
+      start_period: 30s
     environment:
       - MYSQL_DATABASE=bouncer_bot
       - MYSQL_USER=user
