@@ -65,34 +65,40 @@ export class BouncerSetupCommand extends Command {
   }
 
   public async chatInputRun (interaction: ChatInputCommandInteraction) {
-    console.log('running bouncersetup command')
     const subcommand = interaction.options.getSubcommand()
 
-    if (subcommand === 'show-status') {
-      const embed = await this.makeChannelsEmbed(interaction.guild!.id)
-      return await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral })
-    }
+    switch (subcommand) {
+      case 'show-status':
+        // eslint-disable-next-line no-case-declarations
+        const embed = await this.makeChannelsEmbed(interaction.guild!.id)
+        return await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral })
 
-    // Voice channels
-    if (subcommand === 'set-private-vc' || subcommand === 'set-waiting-vc') {
-      await this.setVoiceChannels(interaction)
-    }
+      case 'set-private-vc':
+      case 'set-waiting-vc':
+        await this.setVoiceChannels(interaction)
+        break
 
-    // Text channel
-    if (subcommand === 'set-text-channel') {
-      await this.setTextChannel(interaction)
-    }
+      case 'set-text-channel':
+        await this.setTextChannel(interaction)
+        break
 
-    if (subcommand === 'enable') {
-      await this.enableBouncer(interaction.guild!.id, interaction)
-    }
+      case 'enable':
+        await this.enableBouncer(interaction.guild!.id, interaction)
+        break
 
-    if (subcommand === 'disable') {
-      await this.disableBouncer(interaction.guild!.id, interaction)
-    }
+      case 'disable':
+        await this.disableBouncer(interaction.guild!.id, interaction)
+        break
 
-    if (subcommand === 'reset') {
-      await this.resetBouncer(interaction.guild!.id, interaction)
+      case 'reset':
+        await this.resetBouncer(interaction.guild!.id, interaction)
+        break
+
+      default:
+        await interaction.reply({
+          content: 'Unknown subcommand',
+          flags: MessageFlags.Ephemeral
+        })
     }
   }
 
