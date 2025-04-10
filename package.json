@@ -2,9 +2,11 @@
   "name": "discord-bouncer",
   "version": "1.0.0",
   "description": "A discord \"bouncer\" to manage access to a private voice channel.",
-  "main": "index.ts",
+  "main": "src/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc",
+    "lint": "eslint . --ext .ts --fix"
   },
   "keywords": [
     "discord-bot",
@@ -15,14 +17,14 @@
   "author": "MiguelHigueraDev",
   "license": "MIT",
   "dependencies": {
-    "@discordjs/opus": "^0.9.0",
-    "@discordjs/voice": "^0.16.1",
-    "@prisma/client": "5.10.2",
-    "@sapphire/framework": "^5.0.7",
+    "@discordjs/opus": "^0.10.0",
+    "@discordjs/voice": "^0.18.0",
+    "@prisma/client": "^6.6.0",
+    "@sapphire/framework": "^5.3.3",
     "date-fns": "^3.3.1",
     "discord.js": "14.x",
     "dotenv": "^16.4.5",
-    "sodium": "^3.0.2"
+    "libsodium-wrappers": "^0.7.15"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^6.4.0",
@@ -31,7 +33,7 @@
     "eslint-plugin-import": "^2.25.2",
     "eslint-plugin-n": "^15.0.0 || ^16.0.0 ",
     "eslint-plugin-promise": "^6.0.0",
-    "prisma": "^5.10.2",
+    "prisma": "^6.6.0",
     "typescript": "^5.4.2"
   }
 }
