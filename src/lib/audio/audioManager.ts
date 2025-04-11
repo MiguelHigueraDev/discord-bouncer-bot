@@ -23,8 +23,9 @@ const playAudio = async (guildId: string): Promise<void> => {
     const player = createAudioPlayer()
     connection.subscribe(player)
 
-    const basePath = path.resolve(__dirname, '../../../assets')
+    const basePath = path.resolve(__dirname, '../../../src/assets')
     const resource = createAudioResource(path.join(basePath, '/bell.mp3'))
+
     player.play(resource)
 
     // Disconnect after playing
