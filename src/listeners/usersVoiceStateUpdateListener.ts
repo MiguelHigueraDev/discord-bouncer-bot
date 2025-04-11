@@ -86,18 +86,23 @@ export class UsersVoiceStateUpdateListener extends Listener {
    * Creates and returns an updated EmbedBuilder for a join request.
    * This includes the action performed on the member and the person who performed it
    *
+   * @param {GuildChannels} guildChannels - the guild channels
    * @param {User} user - the user
    * @param {ActionType} action - the action taken on the user
    * @param {User} executor - the user who performed the action
    * @return {EmbedBuilder} the embed builder for the join request with the action taken and the user responsible for it
    */
-  private makeUpdatedEmbed (user: User, action: ActionType, executor: User): EmbedBuilder {
+  private makeUpdatedEmbed (guildChannels: GuildChannels, user: User, action: ActionType, executor: User): EmbedBuilder {
+    const { privateVcId } = guildChannels
     const embed = new EmbedBuilder()
-      .setColor('Blurple')
-      .setTitle('Join Request')
-      .setDescription(`<@${user.id}> was ${action} by <@${executor.id}>.`)
+      .setColor("Blurple")
+      .setTitle("Join Request")
+      .setDescription(
+        `<@${user.id}> wants to join the <#${privateVcId}> channel.\n\n<@${user.id}> was ${action} by <@${executor.id}>.`
+      )
       .setThumbnail(user.displayAvatarURL())
       .setFooter({ text: `Requested by ${user.username}` })
+      .setTimestamp();
     return embed
   }
 
@@ -157,7 +162,7 @@ export class UsersVoiceStateUpdateListener extends Listener {
           await interaction.reply({ content: 'User ignored for current session.', flags: MessageFlags.Ephemeral })
         }
         // Update embed with action taken and executor
-        const updatedEmbed = this.makeUpdatedEmbed(user.user, interaction.customId as ActionType, interaction.user)
+        const updatedEmbed = this.makeUpdatedEmbed(guildChannels, user.user, interaction.customId as ActionType, interaction.user)
         await message.edit({ embeds: [updatedEmbed] })
       } catch (error) {
         await interaction.reply({ content: 'Error moving user to private VC. If they haven\'t left the VC, check that I have permissions to connect to the VC and to move members.', flags: MessageFlags.Ephemeral })
