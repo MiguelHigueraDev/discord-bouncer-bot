@@ -1,10 +1,10 @@
 import { Command } from '@sapphire/framework'
-import { type ChatInputCommandInteraction, PermissionFlagsBits, ChannelType, EmbedBuilder, InteractionContextType, MessageFlags } from 'discord.js'
+import { type ChatInputCommandInteraction, PermissionFlagsBits, ChannelType, EmbedBuilder, InteractionContextType, MessageFlags, InteractionResponse } from 'discord.js'
 import guildHandler from '../lib/database/guildHandler'
 import { checkChannelPermissions } from '../lib/permissions/checkPermissions'
 
 export class BouncerSetupCommand extends Command {
-  public constructor (context: Command.LoaderContext, options: Command.Options) {
+  public constructor(context: Command.LoaderContext, options: Command.Options) {
     super(context, {
       ...options,
       name: 'bouncersetup',
@@ -12,7 +12,7 @@ export class BouncerSetupCommand extends Command {
     })
   }
 
-  public override registerApplicationCommands (registry: Command.Registry): void {
+  public override registerApplicationCommands(registry: Command.Registry): void {
     registry.registerChatInputCommand((builder) =>
       builder
         .setName(this.name)
@@ -64,148 +64,231 @@ export class BouncerSetupCommand extends Command {
     )
   }
 
-  public async chatInputRun (interaction: ChatInputCommandInteraction) {
+  public async chatInputRun(interaction: ChatInputCommandInteraction): Promise<void | InteractionResponse> {
     const subcommand = interaction.options.getSubcommand()
+    const guildId = interaction.guild!.id
 
-    switch (subcommand) {
-      case 'show-status':
-        // eslint-disable-next-line no-case-declarations
-        const embed = await this.makeChannelsEmbed(interaction.guild!.id)
-        return await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral })
-
-      case 'set-private-vc':
-      case 'set-waiting-vc':
-        await this.setVoiceChannels(interaction)
-        break
-
-      case 'set-text-channel':
-        await this.setTextChannel(interaction)
-        break
-
-      case 'enable':
-        await this.enableBouncer(interaction.guild!.id, interaction)
-        break
-
-      case 'disable':
-        await this.disableBouncer(interaction.guild!.id, interaction)
-        break
-
-      case 'reset':
-        await this.resetBouncer(interaction.guild!.id, interaction)
-        break
-
-      default:
-        await interaction.reply({
-          content: 'Unknown subcommand',
-          flags: MessageFlags.Ephemeral
-        })
+    try {
+      switch (subcommand) {
+        case 'show-status':
+          const embed = await this.makeChannelsEmbed(guildId)
+          return await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral })
+  
+        case 'set-private-vc':
+        case 'set-waiting-vc':
+          return await this.setVoiceChannels(interaction)
+  
+        case 'set-text-channel':
+          return await this.setTextChannel(interaction)
+  
+        case 'enable':
+          return await this.enableBouncer(guildId, interaction)
+  
+        case 'disable':
+          return await this.disableBouncer(guildId, interaction)
+  
+        case 'reset':
+          return await this.resetBouncer(guildId, interaction)
+  
+        default:
+          return await interaction.reply({
+            content: 'Unknown subcommand',
+            flags: MessageFlags.Ephemeral
+          })
+      }
+    } catch (error) {
+      console.error(`Error executing ${subcommand}:`, error)
+      return await interaction.reply({
+        content: 'An unexpected error occurred while processing your command.',
+        flags: MessageFlags.Ephemeral
+      }).catch(() => {})
     }
   }
 
-  private readonly setVoiceChannels = async (interaction: ChatInputCommandInteraction): Promise<void> => {
+  /**
+   * Check permissions for a channel and respond with error if needed
+   * @returns true if permissions check passed, false if already responded with error
+   */
+  private async checkAndRespondPermissions(
+    interaction: ChatInputCommandInteraction, 
+    channelId: string, 
+    permissions: string[]
+  ): Promise<boolean> {
+    const hasPermissions = await checkChannelPermissions(interaction.guild!.id, channelId, permissions)
+    
+    // Error checking permissions
+    if (hasPermissions === false) {
+      await interaction.reply({ 
+        content: 'Error checking channel permissions.', 
+        flags: MessageFlags.Ephemeral 
+      })
+      return false
+    }
+    
+    // Bot lacks one or multiple permissions
+    if (Array.isArray(hasPermissions) && hasPermissions.length > 0) {
+      await interaction.reply({ 
+        content: `I do not have permission(s) to perform this action.\nMissing permissions: \`${hasPermissions.join(', ')}\``, 
+        flags: MessageFlags.Ephemeral 
+      })
+      return false
+    }
+    
+    return true
+  }
+
+  private async setVoiceChannels(interaction: ChatInputCommandInteraction): Promise<void> {
     const channel = interaction.options.getChannel('voice-channel', true)
     const subcommand = interaction.options.getSubcommand()
 
-    // First check if bot has permissions to connect to the channel, speak, and move members
-    const hasPermissions = await checkChannelPermissions(interaction.guild!.id, channel.id, ['Connect', 'Speak', 'MoveMembers'])
-    // Error checking permissions
-    if (hasPermissions === false) {
-      await interaction.reply({ content: 'Error checking channel permissions.', flags: MessageFlags.Ephemeral })
-    }
-    // Bot lacks one or multiple permissions
-    if (Array.isArray(hasPermissions) && hasPermissions.length > 0) {
-      await interaction.reply({ content: 'I do not have permission(s) to perform this action.\nMissing permissions: `' + hasPermissions.join(', ') + '`', flags: MessageFlags.Ephemeral })
+    // Check required permissions
+    if (!await this.checkAndRespondPermissions(
+      interaction, 
+      channel.id, 
+      ['Connect', 'Speak', 'MoveMembers']
+    )) {
+      return
     }
 
-    // Voice channels
-    if (subcommand === 'set-private-vc') {
-      const updated = await guildHandler.updateGuildPrivateVcId(interaction.guild!.id, channel.id)
+    // Update appropriate channel based on subcommand
+    const isPrivate = subcommand === 'set-private-vc'
+    const updated = isPrivate
+      ? await guildHandler.updateGuildPrivateVcId(interaction.guild!.id, channel.id)
+      : await guildHandler.updateGuildWaitingVcId(interaction.guild!.id, channel.id)
 
-      if (!updated) {
-        await interaction.reply({ content: 'Error updating the private voice channel.', flags: MessageFlags.Ephemeral })
-      } else {
-        await interaction.reply({ content: `The private channel has been updated to <#${channel.id}>.`, flags: MessageFlags.Ephemeral })
-      }
-    } else {
-      const updated = await guildHandler.updateGuildWaitingVcId(interaction.guild!.id, channel.id)
-
-      if (!updated) {
-        await interaction.reply({ content: 'Error updating the waiting room voice channel.', flags: MessageFlags.Ephemeral })
-      } else {
-        await interaction.reply({ content: `The waiting room channel has been updated to <#${channel.id}>.`, flags: MessageFlags.Ephemeral })
-      }
+    if (!updated) {
+      const channelType = isPrivate ? 'private voice' : 'waiting room voice'
+      await interaction.reply({ 
+        content: `Error updating the ${channelType} channel.`, 
+        flags: MessageFlags.Ephemeral 
+      })
+      return
     }
+
+    const channelLabel = isPrivate ? 'private' : 'waiting room'
+    await interaction.reply({ 
+      content: `The ${channelLabel} channel has been updated to <#${channel.id}>.`, 
+      flags: MessageFlags.Ephemeral 
+    })
   }
 
-  private readonly setTextChannel = async (interaction: ChatInputCommandInteraction): Promise<void> => {
+  private async setTextChannel(interaction: ChatInputCommandInteraction): Promise<void> {
     const channel = interaction.options.getChannel('text-channel', true)
 
-    // First check if bot has permissions to read and send messages to the channel
-    const hasPermissions = await checkChannelPermissions(interaction.guild!.id, channel.id, ['ViewChannel', 'SendMessages'])
-    // Error checking permissions
-    if (hasPermissions === false) {
-      await interaction.reply({ content: 'Error checking channel permissions.', flags: MessageFlags.Ephemeral })
-    }
-    // Bot lacks one or multiple permissions
-    if (Array.isArray(hasPermissions) && hasPermissions.length > 0) {
-      await interaction.reply({ content: 'I do not have permission(s) to perform this action.\nMissing permissions: `' + hasPermissions.join(', ') + '`', flags: MessageFlags.Ephemeral })
+    // Check required permissions
+    if (!await this.checkAndRespondPermissions(
+      interaction, 
+      channel.id, 
+      ['ViewChannel', 'SendMessages']
+    )) {
+      return
     }
 
     const updated = await guildHandler.updateGuildTextChannelId(interaction.guild!.id, channel.id)
+    
     if (!updated) {
-      await interaction.reply({ content: 'Error updating the text channel.', flags: MessageFlags.Ephemeral })
-    } else {
-      await interaction.reply({ content: `The text channel has been updated to <#${channel.id}>.`, flags: MessageFlags.Ephemeral })
+      await interaction.reply({ 
+        content: 'Error updating the text channel.', 
+        flags: MessageFlags.Ephemeral 
+      })
+      return
     }
+    
+    await interaction.reply({ 
+      content: `The text channel has been updated to <#${channel.id}>.`, 
+      flags: MessageFlags.Ephemeral 
+    })
   }
 
-  private readonly enableBouncer = async (guildId: string, interaction: ChatInputCommandInteraction): Promise<void> => {
+  private async enableBouncer(guildId: string, interaction: ChatInputCommandInteraction): Promise<void> {
     // Check that all channels have been set up
     if (!await guildHandler.checkAllChannelsAreSetUp(guildId)) {
-      await interaction.reply({ content: 'All channels must be set up before enabling the bouncer.', flags: MessageFlags.Ephemeral })
+      await interaction.reply({ 
+        content: 'All channels must be set up before enabling the bouncer.', 
+        flags: MessageFlags.Ephemeral 
+      })
+      return
     }
+    
     const updated = await guildHandler.toggleGuildBouncer(guildId, true)
+    
     if (!updated) {
-      await interaction.reply({ content: 'Error updating the bouncer status.', flags: MessageFlags.Ephemeral })
-    } else {
-      await interaction.reply({ content: 'The bouncer has been enabled for this server.', flags: MessageFlags.Ephemeral })
+      await interaction.reply({ 
+        content: 'Error updating the bouncer status.', 
+        flags: MessageFlags.Ephemeral 
+      })
+      return
     }
+    
+    await interaction.reply({ 
+      content: 'The bouncer has been enabled for this server.', 
+      flags: MessageFlags.Ephemeral 
+    })
   }
 
-  private readonly disableBouncer = async (guildId: string, interaction: ChatInputCommandInteraction): Promise<void> => {
+  private async disableBouncer(guildId: string, interaction: ChatInputCommandInteraction): Promise<void> {
     const updated = await guildHandler.toggleGuildBouncer(guildId, false)
+    
     if (!updated) {
-      await interaction.reply({ content: 'Error updating the bouncer status.', flags: MessageFlags.Ephemeral })
-    } else {
-      await interaction.reply({ content: 'The bouncer has been disabled for this server.', flags: MessageFlags.Ephemeral })
+      await interaction.reply({ 
+        content: 'Error updating the bouncer status.', 
+        flags: MessageFlags.Ephemeral 
+      })
+      return
     }
+    
+    await interaction.reply({ 
+      content: 'The bouncer has been disabled for this server.', 
+      flags: MessageFlags.Ephemeral 
+    })
   }
 
-  private readonly resetBouncer = async (guildId: string, interaction: ChatInputCommandInteraction): Promise<void> => {
+  private async resetBouncer(guildId: string, interaction: ChatInputCommandInteraction): Promise<void> {
     const updated = await guildHandler.resetGuildBouncer(guildId)
+    
     if (!updated) {
-      await interaction.reply({ content: 'Error resetting the bouncer status.', flags: MessageFlags.Ephemeral })
-    } else {
-      await interaction.reply({ content: 'The bouncer has been reset for this server.', flags: MessageFlags.Ephemeral })
+      await interaction.reply({ 
+        content: 'Error resetting the bouncer status.', 
+        flags: MessageFlags.Ephemeral 
+      })
+      return
     }
+    
+    await interaction.reply({ 
+      content: 'The bouncer has been reset for this server.', 
+      flags: MessageFlags.Ephemeral 
+    })
   }
 
-  private readonly makeChannelsEmbed = async (guildId: string): Promise<EmbedBuilder> => {
-    const privateVcId = await guildHandler.getGuildPrivateVcId(guildId)
-    const waitingVcId = await guildHandler.getGuildWaitingVcId(guildId)
-    const textChannelId = await guildHandler.getGuildTextChannelId(guildId)
+  private async makeChannelsEmbed(guildId: string): Promise<EmbedBuilder> {
+    const [privateVcId, waitingVcId, textChannelId, isEnabled] = await Promise.all([
+      guildHandler.getGuildPrivateVcId(guildId),
+      guildHandler.getGuildWaitingVcId(guildId),
+      guildHandler.getGuildTextChannelId(guildId),
+      guildHandler.getGuildBouncerStatus(guildId)
+    ])
 
-    const embed = new EmbedBuilder()
+    return new EmbedBuilder()
       .setTitle('Bouncer Status')
       .setColor('Blurple')
       .setDescription('Channels:')
       .addFields(
-        { name: 'Private voice channel', value: `${privateVcId != null ? `<#${privateVcId}>` : 'Set it using /bouncersetup set-private-vc'}` },
-        { name: 'Waiting room voice channel', value: `${waitingVcId != null ? `<#${waitingVcId}>` : 'Set it using /bouncersetup set-waiting-vc'}` },
-        { name: 'Text channel', value: `${textChannelId != null ? `<#${textChannelId}>` : 'Set it using /bouncersetup set-text-channel'}` },
-        { name: 'Status', value: `${await guildHandler.getGuildBouncerStatus(guildId) ? ':white_check_mark: Enabled' : ':x: Disabled'}` }
+        { 
+          name: 'Private voice channel', 
+          value: privateVcId ? `<#${privateVcId}>` : 'Set it using /bouncersetup set-private-vc'
+        },
+        { 
+          name: 'Waiting room voice channel', 
+          value: waitingVcId ? `<#${waitingVcId}>` : 'Set it using /bouncersetup set-waiting-vc'
+        },
+        { 
+          name: 'Text channel', 
+          value: textChannelId ? `<#${textChannelId}>` : 'Set it using /bouncersetup set-text-channel'
+        },
+        { 
+          name: 'Status', 
+          value: isEnabled ? ':white_check_mark: Enabled' : ':x: Disabled'
+        }
       )
-
-    return embed
   }
 }

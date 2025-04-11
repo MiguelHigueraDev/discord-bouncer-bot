@@ -1,7 +1,6 @@
 /**
- * This one handles the streamer part of the bot
- * It automatically starts new sessions when someone joins the channel
- * and destroys them when all people leave the channel
+ * Manages streamer sessions by automatically starting when someone joins a private channel
+ * and destroying them when all people leave the channel
  */
 
 import { Listener } from '@sapphire/framework'
@@ -10,6 +9,11 @@ import guildHandler from '../lib/database/guildHandler'
 import sessionManager from '../lib/helpers/sessionManager'
 import { type GuildChannels } from '../lib/interfaces/GuildChannels'
 import { checkChannelPermissions } from '../lib/permissions/checkPermissions'
+
+const REQUIRED_PERMISSIONS = {
+  voice: ['Connect', 'Speak', 'MoveMembers'],
+  text: ['ViewChannel', 'SendMessages']
+}
 
 export class StreamerVoiceUpdateListener extends Listener {
   public constructor (context: Listener.LoaderContext, options: Listener.Options) {
@@ -20,68 +24,108 @@ export class StreamerVoiceUpdateListener extends Listener {
   }
 
   public async run (oldState: VoiceState, newState: VoiceState) {
-    const joinedChannel = newState.channelId
-    const guildPrivateVcId = await guildHandler.getGuildPrivateVcId(newState.guild.id)
-    if (joinedChannel === guildPrivateVcId) {
-      // Check if this guild has the bouncer enabled
-      if (!await this.checkIfGuildIsValid(newState.guild.id)) return
+    const privateVcId = await guildHandler.getGuildPrivateVcId(newState.guild.id)
+    if (newState.channelId !== privateVcId) return
 
-      if (newState.channel!.members.size > 0) {
-        const guildTextChannelId = await guildHandler.getGuildTextChannelId(newState.guild.id)
-        const waitingVcId = await guildHandler.getGuildWaitingVcId(newState.guild.id)
+    // Skip if guild configuration is invalid
+    if (!await this.isGuildConfigValid(newState.guild.id)) return
 
-        // Check if channels are set and if the bot has permission to access channels and move members
-        if (guildPrivateVcId == null || waitingVcId == null || guildTextChannelId == null) return
-        if (!await this.checkPermissions({ privateVcId: guildPrivateVcId, waitingVcId, textChannelId: guildTextChannelId }, newState)) return
+    if (!newState.channel?.members.size) return
 
-        const guildTextChannel = await newState.guild.channels.fetch(guildTextChannelId)
-        if (guildTextChannel == null) return
+    const channels = await this.getGuildChannels(newState.guild.id)
+    if (!channels) return
 
-        if (guildTextChannel.isTextBased()) {
-          // Start session
-          const sessionStarted = await sessionManager.startSession(newState.guild.id)
-          if (!sessionStarted) return
-          const embed = this.makeEmbed(waitingVcId)
-          await guildTextChannel.send({ embeds: [embed] })
-        }
-      }
-    }
+    if (!await this.hasRequiredPermissions(channels, newState)) return
+
+    const textChannel = await newState.guild.channels.fetch(channels.textChannelId)
+    if (!textChannel?.isTextBased()) return
+
+    await this.startAndNotify(newState.guild.id, textChannel, channels.waitingVcId)
   }
 
   /**
-   * Check if the guild is valid
-   * This means: has the bouncer enabled and has all three channels set up
-   *
-   * @param {string} guildId - The ID of the guild to be checked
-   * @return {Promise<boolean>} A boolean indicating if the guild is valid
+   * Starts a session and sends notification
    */
-  private async checkIfGuildIsValid (guildId: string): Promise<boolean> {
-    const guildEnabled = await guildHandler.getGuildBouncerStatus(guildId)
-    return guildEnabled
+  private async startAndNotify (guildId: string, textChannel: any, waitingVcId: string): Promise<void> {
+    const sessionStarted = await sessionManager.startSession(guildId)
+    if (!sessionStarted) return
+
+    const embed = this.createSessionEmbed(waitingVcId)
+    await textChannel.send({ embeds: [embed] })
   }
 
-  private async checkPermissions (channels: GuildChannels, state: VoiceState): Promise<boolean> {
-    const { privateVcId, waitingVcId, textChannelId } = channels
-    const privateVc = await state.client.channels.fetch(privateVcId)
-    const waitingVc = await state.client.channels.fetch(waitingVcId)
-    const textChannel = await state.client.channels.fetch(textChannelId)
-    if (privateVc == null || waitingVc == null || textChannel == null) return false
-    if (privateVc.isVoiceBased() && waitingVc.isVoiceBased() && textChannel.isTextBased()) {
-      // Check permissions for each
-      const hasPrivateVcPermission = await checkChannelPermissions(state.guild.id, privateVcId, ['Connect', 'Speak', 'MoveMembers'])
-      const hasWaitingVcPermission = await checkChannelPermissions(state.guild.id, waitingVcId, ['Connect', 'Speak', 'MoveMembers'])
-      const hasTextChannelPermission = await checkChannelPermissions(state.guild.id, textChannelId, ['ViewChannel', 'SendMessages'])
-      return (hasPrivateVcPermission === true && hasWaitingVcPermission === true && hasTextChannelPermission === true)
+  /**
+   * Retrieves all channel IDs for a guild
+   */
+  private async getGuildChannels (guildId: string): Promise<GuildChannels | null> {
+    const privateVcId = await guildHandler.getGuildPrivateVcId(guildId)
+    const waitingVcId = await guildHandler.getGuildWaitingVcId(guildId)
+    const textChannelId = await guildHandler.getGuildTextChannelId(guildId)
+
+    if (!privateVcId || !waitingVcId || !textChannelId) return null
+
+    return { privateVcId, waitingVcId, textChannelId }
+  }
+
+  /**
+   * Check if guild has bouncer enabled and properly configured
+   */
+  private async isGuildConfigValid (guildId: string): Promise<boolean> {
+    return await guildHandler.getGuildBouncerStatus(guildId)
+  }
+
+  /**
+   * Verifies the bot has all required permissions in the configured channels
+   */
+  private async hasRequiredPermissions (channels: GuildChannels, state: VoiceState): Promise<boolean> {
+    const { privateVcId, waitingVcId, textChannelId } = channels;
+
+    const [privateVc, waitingVc, textChannel] = await Promise.all([
+      state.client.channels.fetch(privateVcId),
+      state.client.channels.fetch(waitingVcId),
+      state.client.channels.fetch(textChannelId),
+    ]);
+
+    if (!privateVc || !waitingVc || !textChannel) return false;
+
+    if (
+      !privateVc.isVoiceBased() ||
+      !waitingVc.isVoiceBased() ||
+      !textChannel.isTextBased()
+    ) {
+      return false;
     }
-    return false
+
+    const results = await Promise.all([
+      checkChannelPermissions(
+        state.guild.id,
+        privateVcId,
+        REQUIRED_PERMISSIONS.voice
+      ),
+      checkChannelPermissions(
+        state.guild.id,
+        waitingVcId,
+        REQUIRED_PERMISSIONS.voice
+      ),
+      checkChannelPermissions(
+        state.guild.id,
+        textChannelId,
+        REQUIRED_PERMISSIONS.text
+      ),
+    ]);
+
+    // Check if all permissions results are boolean true
+    // If any result is a string, it's an error message
+    return results.every((result) => result === true);
   }
 
-  private readonly makeEmbed = (waitingVcId: string): EmbedBuilder => {
-    const embed = new EmbedBuilder()
+  /**
+   * Creates the session notification embed
+   */
+  private createSessionEmbed (waitingVcId: string): EmbedBuilder {
+    return new EmbedBuilder()
       .setColor('Blurple')
       .setTitle('New session started')
       .setDescription(`You will be notified of all people who join <#${waitingVcId}> in this channel.`)
-
-    return embed
   }
 }
