@@ -1,5 +1,5 @@
 import { Command } from '@sapphire/framework'
-import { type ChatInputCommandInteraction, PermissionFlagsBits, ChannelType, EmbedBuilder, InteractionContextType, MessageFlags, InteractionResponse } from 'discord.js'
+import { type ChatInputCommandInteraction, PermissionFlagsBits, ChannelType, EmbedBuilder, InteractionContextType, MessageFlags, InteractionResponse, PermissionResolvable } from 'discord.js'
 import guildHandler from '../lib/database/guildHandler'
 import { checkChannelPermissions } from '../lib/permissions/checkPermissions'
 
@@ -112,7 +112,7 @@ export class BouncerSetupCommand extends Command {
   private async checkAndRespondPermissions(
     interaction: ChatInputCommandInteraction, 
     channelId: string, 
-    permissions: string[]
+    permissions: PermissionResolvable[]
   ): Promise<boolean> {
     const hasPermissions = await checkChannelPermissions(interaction.guild!.id, channelId, permissions)
     

@@ -4,13 +4,18 @@
  */
 
 import { Listener } from '@sapphire/framework'
-import { EmbedBuilder, type VoiceState } from 'discord.js'
+import { EmbedBuilder, PermissionResolvable, type VoiceState } from 'discord.js'
 import guildHandler from '../lib/database/guildHandler'
 import sessionManager from '../lib/helpers/sessionManager'
 import { type GuildChannels } from '../lib/interfaces/GuildChannels'
 import { checkChannelPermissions } from '../lib/permissions/checkPermissions'
 
-const REQUIRED_PERMISSIONS = {
+interface RequiredPermissions {
+  voice: PermissionResolvable[]
+  text: PermissionResolvable[]
+}
+
+const REQUIRED_PERMISSIONS: RequiredPermissions = {
   voice: ['Connect', 'Speak', 'MoveMembers'],
   text: ['ViewChannel', 'SendMessages']
 }
