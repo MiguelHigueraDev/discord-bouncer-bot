@@ -6,10 +6,10 @@ import { type PermissionResolvable } from 'discord.js'
  *
  * @param {string} guildId - The ID of the guild
  * @param {string} channelId - The ID of the channel
- * @param {string[]} permissions - The permissions to check
+ * @param {PermissionResolvable[]} permissions - The permissions to check
  * @return {Promise<string[] | boolean>} The missing permissions or a boolean indicating if all permissions are present
  */
-export const checkChannelPermissions = async (guildId: string, channelId: string, permissions: string[]): Promise<string[] | boolean> => {
+export const checkChannelPermissions = async (guildId: string, channelId: string, permissions: PermissionResolvable[]): Promise<string[] | boolean> => {
   try {
     const guild = await container.client.guilds.fetch(guildId)
     const channel = await guild.channels.fetch(channelId)
@@ -22,9 +22,9 @@ export const checkChannelPermissions = async (guildId: string, channelId: string
     // Store all missing permissions to display them to the user in case they are missing one of them
     const missingPermissions: string[] = []
     for (const permission of permissions) {
-      const hasPermission = channel.permissionsFor(guildMember, true).has(permission as PermissionResolvable)
+      const hasPermission = channel.permissionsFor(guildMember, true).has(permission)
       if (!hasPermission) {
-        missingPermissions.push(permission)
+        missingPermissions.push(String(permission))
       }
     }
 
